@@ -3,6 +3,7 @@
 #include <WADFile.hpp>
 #include <string>
 #include <print>
+#include <memory>
 #include <Skybox.hpp>
 #include <SDL3/SDL.h>
 
@@ -195,9 +196,7 @@ Mesh* BSPMap::buildFaceMesh(const BSPFace& face) {
 		else
 			bspVertex = bsp.vertices()[edge.iVertex[1]];
 
-		faceVertices.push_back(
-			BSP_TO_ENGINE_VECTOR(bspVertex) * BSP_TO_ENGINE_UNIT_CONVERSION
-		);
+		faceVertices.push_back(BSP_TO_ENGINE_VECTOR(bspVertex));
 	}
 
 	const BSPPlane& plane = bsp.planes()[face.iPlane];
@@ -223,8 +222,8 @@ Mesh* BSPMap::buildFaceMesh(const BSPFace& face) {
 		// 2. bsp scale is inches, engine is in meters
 		// 3. apply texture offset
 		// 4. normalize to 0-1 range for opengl sampling
-		float u = (glm::dot(position, s) / BSP_TO_ENGINE_UNIT_CONVERSION + texInfo.fSShift) / texture.width;
-		float v = (glm::dot(position, t) / BSP_TO_ENGINE_UNIT_CONVERSION + texInfo.fTShift) / texture.height;
+		float u = (glm::dot(position, s) + texInfo.fSShift) / texture.width;
+		float v = (glm::dot(position, t) + texInfo.fTShift) / texture.height;
 
 		vertex.uv = glm::vec2(u, v);
 		vertices.push_back(vertex);
@@ -269,15 +268,17 @@ void BSPMap::buildSkybox() {
 	skybox = Skybox(paths, new Shader("assets/shaders/skybox.vert", "assets/shaders/skybox.frag"), SKYBOX_TYPE_GOLDSRC);
 }
 
-int BSPMap::traceHullSegment(const int nodeIndex, const glm::vec3& segmentStart, const glm::vec3& segmentEnd, glm::vec3& outNormal) {
+BSPHullTrace BSPMap::traceHullSegment(const int nodeIndex, const glm::vec3& segmentStart, const glm::vec3& segmentEnd) {
 	
 	// epsilon (helps with ramps/inclines)
 	const float acceptanceEpsilon = -0.03125f;
 
 	// negative index is a leaf, base case
-	if (nodeIndex < 0)
-		return nodeIndex;
-
+	if (nodeIndex < 0) {
+		bool solid = nodeIndex == BSP_CONTENTS_SOLID;
+		return { nodeIndex, solid ? 0.0f : 1.0f, glm::vec3(0.0f), solid };
+	}
+		
 	const BSPClipNode& cNode = bsp.clipNodes()[nodeIndex];
 	const BSPPlane& cPlane = bsp.planes()[cNode.iPlane];
 	glm::vec3 planeNormal = glm::vec3(cPlane.vNormal.x, cPlane.vNormal.z, -cPlane.vNormal.y);
@@ -294,17 +295,18 @@ int BSPMap::traceHullSegment(const int nodeIndex, const glm::vec3& segmentStart,
 
 	// if both points are on positive side of plane, recurse front (0)
 	if (segmentStartDistance >= acceptanceEpsilon && segmentEndDistance >= acceptanceEpsilon)
-		return traceHullSegment(cNode.iChildren[0], segmentStart, segmentEnd, outNormal);
+		return traceHullSegment(cNode.iChildren[0], segmentStart, segmentEnd);
 	
 	// if both points are on negative side of plane, recurse back (1)
 	if (segmentStartDistance < acceptanceEpsilon && segmentEndDistance < acceptanceEpsilon)
-		return traceHullSegment(cNode.iChildren[1], segmentStart, segmentEnd, outNormal);
+		return traceHullSegment(cNode.iChildren[1], segmentStart, segmentEnd);
 
 	// i think i have computed the line plane intersection correctly
 	// https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection
 
 	// lerp for midpoint
 	float t = segmentStartDistance / (segmentStartDistance - segmentEndDistance);
+	t = glm::clamp(t, 0.0f, 1.0f);
 	
 	// i_{a} + i_{ab}*t 
 	glm::vec3 intersection = segmentStart + t * (segmentEnd - segmentStart);
@@ -313,15 +315,20 @@ int BSPMap::traceHullSegment(const int nodeIndex, const glm::vec3& segmentStart,
 	int farSide = segmentStartDistance >= acceptanceEpsilon ? 1 : 0;
 
 	// check nearside
-	int nearContents = traceHullSegment(cNode.iChildren[nearSide], segmentStart, intersection, outNormal);
-	if (nearContents != BSP_CONTENTS_EMPTY)
-		return nearContents;
-		
+	{
+		BSPHullTrace nearTrace = traceHullSegment(cNode.iChildren[nearSide], segmentStart, intersection);
+		if (nearTrace.content != BSP_CONTENTS_EMPTY)
+			return { nearTrace.content, nearTrace.fraction * t, nearTrace.normal, nearTrace.allSolid };
+	}	
 
 	// check farside
-	int farContents = traceHullSegment(cNode.iChildren[farSide], intersection, segmentEnd, outNormal);
-	if (farContents != BSP_CONTENTS_EMPTY)
-		outNormal = nearSide == 0 ? planeNormal : -planeNormal;
-
-	return farContents;
+	{
+		BSPHullTrace farTrace = traceHullSegment(cNode.iChildren[farSide], intersection, segmentEnd);
+		if (farTrace.content != BSP_CONTENTS_EMPTY) {
+			farTrace.normal = nearSide == 0 ? planeNormal : -planeNormal;
+			return { farTrace.content, t + (1.0f - t) * farTrace.fraction, farTrace.normal, false };
+		}
+	}
+		
+	return { BSP_CONTENTS_EMPTY, 1.0f, glm::vec3(0.0f), false};
 }

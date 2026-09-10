@@ -9,6 +9,7 @@
 #include <SDL3/SDL.h>
 #include "../libs/stb/stb_image.h"
 #include <string>
+#include <cstring>
 
 // define unit cube for skybox
 static const GLfloat SKYBOX_VERTICES[] = {

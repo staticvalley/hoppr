@@ -128,7 +128,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv) {
             std::string origin = entity.at("origin");
             float x, y, z;
             sscanf(origin.c_str(), "%f %f %f", &x, &y, &z);
-            spawnPos = glm::vec3(x, z, -y) * BSP_TO_ENGINE_UNIT_CONVERSION;
+            spawnPos = glm::vec3(x, z, -y);
             SDL_Log("spawn point found: %.2f %.2f %.2f", spawnPos.x, spawnPos.y, spawnPos.z);
             player = new Player(spawnPos, 90.0f, WINDOW_WIDTH / WINDOW_HEIGHT);
             break;
@@ -271,8 +271,6 @@ void drawDebugHud() {
     ImGui::Text("velocity [%.2lf %.2lf %.2lf]", velocity.x, velocity.y, velocity.z);
     ImGui::Text(fps.fpsString.c_str());
     ImGui::End();
-
-    
 
     ImGui::Render();
 

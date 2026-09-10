@@ -13,7 +13,7 @@ Camera::Camera(glm::vec3 startPosition, GLfloat fov, GLfloat aspectRatio)
 	  yaw(-90.0f),
 	  pitch(0.0f),
 	  // control presets
-	  mouseSensitivity(0.09f),
+	  mouseSensitivity(0.03f),
 	  // basic starting camera relative vectors
 	  forward(0.0f, 0.0f, -1.0f),
 	  up(0.0f, 1.0f, 0.0f),
@@ -40,8 +40,8 @@ glm::mat4 Camera::getProjectionMatrix() {
 	return glm::perspective(
 		glm::radians(fov),
 		aspectRatio,
-		0.1f,
-		2000.0f
+		1.0f,
+		100000.0f
 	);
 }
 

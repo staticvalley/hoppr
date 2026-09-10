@@ -25,9 +25,15 @@ public:
 	glm::vec3 rotation;
 	glm::vec3 scale;
 
-	AABB boundingBox;
+	// model uses radians for transform, convert from degrees
+	void setRotationDegrees(glm::vec3 rotationTransform);
 
 	glm::mat4 getModelMatrix();
+
+	AABB boundingBox;
+
+	// set bounding box max and min coords
+	void updateBoundingBox();
 
 private:
 

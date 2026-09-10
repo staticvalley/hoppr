@@ -8,14 +8,12 @@
 #include <glad/glad.h>
 #include <Skybox.hpp>
 #include <vector>
+#include <memory>
 #include <unordered_map>
 #include <optional>
 
 #define ENGINE_WAD_DIR "assets/game/"
 #define ENGINE_SKY_DIR "assets/game/sky/"
-
-// bsp files are in inches, engine is in meters
-#define BSP_TO_ENGINE_UNIT_CONVERSION 0.025f
 
 // goldsrc bsp's have +z as up, converts to [xyz] opengl format
 #define BSP_TO_ENGINE_VECTOR(v) glm::vec3(v.x, v.z, -v.y) 
@@ -23,6 +21,13 @@
 struct BSPSurface {
 	Mesh* mesh;
 	std::shared_ptr<Texture> texture;
+};
+
+struct BSPHullTrace {
+	int content;		// hit type
+	float fraction;		// fraction of segment completed before collision
+	glm::vec3 normal;	// normal of surface collided with
+	bool allSolid;		// true if start and end are both in solid, false if either is not in solid
 };
 
 class BSPMap {
@@ -33,11 +38,10 @@ public:
 	void draw(Shader& shader, Camera& camera);
 
 	// given some line, check where it intersects the clipping hull
-	int traceHullSegment(
+	BSPHullTrace traceHullSegment(
 		const int nodeIndex, 
 		const glm::vec3& segmentStart, 
-		const glm::vec3& segmentEnd, 
-		glm::vec3& outNormal
+		const glm::vec3& segmentEnd
 	);
 	
 	BSPFile bsp;
