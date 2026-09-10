@@ -87,6 +87,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     OpenGL::GL
     glad
     imgui
+    stdc++exp
 )
 
 add_custom_target(copy_assets ALL

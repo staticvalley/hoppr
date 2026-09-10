@@ -85,3 +85,6 @@ assets/game/
 
 # doxygen output
 docs/
+
+# clion
+.idea/
