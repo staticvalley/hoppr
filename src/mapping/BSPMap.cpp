@@ -172,6 +172,13 @@ Mesh* BSPMap::buildFaceMesh(const BSPFace& face) {
 	const BSPTextureInfo& texInfo = bsp.textureInfo()[face.iTextureInfo];
 	const BSPTexture& texture = bsp.textures()[texInfo.iMiptex];
 
+	// for lightmap calculations
+	std::vector<glm::vec2> baseTexCoords;
+	float minU = std::numeric_limits<float>::max();
+	float maxU = std::numeric_limits<float>::lowest();
+	float minV = std::numeric_limits<float>::max();
+	float maxV = std::numeric_limits<float>::lowest();
+
 	// collect vertices in order
 	std::vector<glm::vec3> faceVertices;
 	for (int i = 0; i < face.nEdges; i++) {
@@ -219,9 +226,8 @@ Mesh* BSPMap::buildFaceMesh(const BSPFace& face) {
 
 		// uv coordinates for vertex
 		// 1. project vertex position to texel (s,t) coordinates
-		// 2. bsp scale is inches, engine is in meters
-		// 3. apply texture offset
-		// 4. normalize to 0-1 range for opengl sampling
+		// 2. apply texture offset
+		// 3. normalize to 0-1 range for opengl sampling
 		float u = (glm::dot(position, s) + texInfo.fSShift) / texture.width;
 		float v = (glm::dot(position, t) + texInfo.fTShift) / texture.height;
 
@@ -281,16 +287,16 @@ BSPHullTrace BSPMap::traceHullSegment(const int nodeIndex, const glm::vec3& segm
 		
 	const BSPClipNode& cNode = bsp.clipNodes()[nodeIndex];
 	const BSPPlane& cPlane = bsp.planes()[cNode.iPlane];
-	glm::vec3 planeNormal = glm::vec3(cPlane.vNormal.x, cPlane.vNormal.z, -cPlane.vNormal.y);
+	glm::vec3 planeNormal = BSP_TO_ENGINE_VECTOR(cPlane.vNormal);
 
 	float segmentStartDistance = glm::dot(
 		segmentStart,
-		BSP_TO_ENGINE_VECTOR(cPlane.vNormal)
+		planeNormal
 	) - cPlane.fDist;
 
 	float segmentEndDistance = glm::dot(
 		segmentEnd,
-		BSP_TO_ENGINE_VECTOR(cPlane.vNormal)
+		planeNormal
 	) - cPlane.fDist;
 
 	// if both points are on positive side of plane, recurse front (0)

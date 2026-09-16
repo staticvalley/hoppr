@@ -55,6 +55,10 @@ void Player::update(float dt, BSPMap& map) {
 	if (movement.moveType == MovementType::WALK) {
 		// poll for jump
 		movement.jumpPressed = keyInputs[SDL_SCANCODE_SPACE];
+		// poll for crouch
+		movement.crouchPressed = keyInputs[SDL_SCANCODE_LCTRL];
+		// poll for sneak
+		movement.isSneaking = keyInputs[SDL_SCANCODE_LSHIFT];
 	}
 
 	if (movement.moveType == MovementType::NOCLIP) {
@@ -64,10 +68,18 @@ void Player::update(float dt, BSPMap& map) {
 
 	movement.update(dt, movementInput, map);
 
-	// camera is PM_EYEHEIGHT units from the feet of the model
-	camera->updatePosition(movement.origin + glm::vec3(0.0f, PM_EYEHEIGHT_FROM_ORIGIN, 0.0f));
+	updateCamera();
 
 	updateCollisionBox();
+}
+
+void Player::updateCamera() {
+	// camera is PM_EYEHEIGHT units from the feet of the model
+	if (movement.isDucking) {
+		camera->updatePosition(movement.origin + glm::vec3(0.0f, PM_EYEHEIGHT_FROM_ORIGIN_CROUCHED, 0.0f));
+	} else {
+		camera->updatePosition(movement.origin + glm::vec3(0.0f, PM_EYEHEIGHT_FROM_ORIGIN, 0.0f));
+	}
 }
 
 void Player::processMouse(float x, float y) {
@@ -75,8 +87,8 @@ void Player::processMouse(float x, float y) {
 }
 
 void Player::updateCollisionBox() {
-	collisionBox = AABB::createFromPoint(
+	/*collisionBox = AABB::createFromPoint(
 		movement.origin + glm::vec3(0.0f, PM_PLAYER_ORIGIN, 0.0f),
 		glm::vec3(0.5f, PM_PLAYER_HEIGHT, 0.5f)
-	);
+	);*/
 }

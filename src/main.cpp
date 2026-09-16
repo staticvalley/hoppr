@@ -50,6 +50,10 @@ FPSCounter fps;
 
 // program initialization
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv) {
+    // silence unused warnings
+    (void)appstate;
+    (void)argc;
+    (void)argv;
 
     // initialize sdl video subsystem
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -142,7 +146,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv) {
 
     sun.ambient_color = glm::vec3(1.0f, 1.0f, 1.0f);
 
-    pl.position = glm::vec3(0, 0, 0);
+    pl.position = spawnPos;
     pl.ambient_color = glm::vec3(0.2);
     pl.diffuse_color = glm::vec3(0.9);
 
@@ -151,6 +155,8 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv) {
 
 // main program loop
 SDL_AppResult SDL_AppIterate(void* appstate) {
+    // silence unused warnings
+    (void)appstate;
 
     // calculate delta time
     float currentTime = (float)SDL_GetTicks() / 1000.0f;
@@ -176,7 +182,7 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
 
     sun.apply(*basic);
 
-    pl.position = glm::vec3(0, sin(currentTime) + 0.5, -0.5);
+    //pl.position = glm::vec3(0, sin(currentTime) + 0.5, -0.5);
 
     if (lightOn) {
         basic->setUniformInt1("u_point_light_count", 1);
@@ -201,6 +207,9 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
 
 // event handler
 SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
+    // silence unused warnings
+    (void)appstate;
+
     switch (event->type) {
     case SDL_EVENT_MOUSE_MOTION:
         player->processMouse(event->motion.xrel, event->motion.yrel);
@@ -232,6 +241,10 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 
 // no cleanup needed, sdl cleans up its own entities
 void SDL_AppQuit(void* appstate, SDL_AppResult result) {
+    // silence unused warnings
+    (void)appstate;
+    (void)result;
+
     delete player;
     delete basic;
 #ifdef DEBUG

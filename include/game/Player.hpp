@@ -28,5 +28,7 @@ public:
 private:
 
 	float health = 100.0f;
-	
+
+	void updateCamera();
+
 };
