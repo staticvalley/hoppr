@@ -21,7 +21,7 @@ public:
     /**
      * @brief default constructor, ideally shouldnt be used to initialize object
      */
-    Skybox() : shader(nullptr), vao(0), vbo(0), textureId(0) {}
+    Skybox() : vao(0), vbo(0), textureId(0), shader(nullptr) {}
 
     /**
      * @brief 
