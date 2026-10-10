@@ -3,6 +3,7 @@ project(OpenGLFPS LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # fetch sdl3
 find_package(SDL3 CONFIG REQUIRED)
@@ -49,6 +50,15 @@ target_include_directories(imgui PUBLIC libs/imgui libs/imgui/backends)
 # imgui needs sdl3 for binding
 target_link_libraries(imgui PRIVATE SDL3::SDL3)
 
+# add spdlog
+include(FetchContent)
+FetchContent_Declare(
+        spdlog
+        GIT_REPOSITORY https://github.com/gabime/spdlog.git
+        GIT_TAG v1.14.1
+)
+FetchContent_MakeAvailable(spdlog)
+
 add_executable(${PROJECT_NAME}
     src/main.cpp
     src/rendering/Shader.cpp
@@ -59,12 +69,16 @@ add_executable(${PROJECT_NAME}
     src/rendering/Skybox.cpp
     src/scene/Camera.cpp
     src/game/Player.cpp
+    src/game/Input.cpp
+    src/game/GameManager.cpp
     src/physics/Collision.cpp
     src/physics/PlayerMovement.cpp
-    src/debug/DebugDrawer.cpp
+    src/debug/DebugDraw.cpp
+    src/debug/Log.cpp
     src/mapping/WADFile.cpp
     src/mapping/BSPFile.cpp
     src/mapping/BSPMap.cpp
+    src/mapping/BSPBrushEntity.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -88,6 +102,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     glad
     imgui
     stdc++exp
+    spdlog::spdlog
 )
 
 add_custom_target(copy_assets ALL

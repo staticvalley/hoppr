@@ -1,7 +1,6 @@
 #pragma once
 
 #include <SDL3/SDL.h>
-#include <cinttypes>
 
 struct FPSCounter {
     uint32_t frameCount = 0;
