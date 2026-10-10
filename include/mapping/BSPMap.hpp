@@ -5,12 +5,13 @@
 
 #include <Mesh.hpp>
 #include <Shader.hpp>
-#include <glad/glad.h>
 #include <Skybox.hpp>
 #include <vector>
 #include <memory>
 #include <unordered_map>
-#include <optional>
+#include <BSPBrushEntity.hpp>
+
+#include "Log.hpp"
 
 #define ENGINE_WAD_DIR "assets/game/"
 #define ENGINE_SKY_DIR "assets/game/sky/"
@@ -28,6 +29,27 @@ struct BSPHullTrace {
 	float fraction;		// fraction of segment completed before collision
 	glm::vec3 normal;	// normal of surface collided with
 	bool allSolid;		// true if start and end are both in solid, false if either is not in solid
+};
+
+// print formatter for BSP traces
+template <>
+struct std::formatter<BSPHullTrace> : std::formatter<char> {
+	auto format(const BSPHullTrace& trace, std::format_context& ctx) const {
+		return std::format_to(
+			ctx.out(),
+			"BSPHullTrace: {{\n"
+			"  .content = {} ({}),\n"
+			"  .fraction = {},\n"
+			"  .normal = [x: {}, y: {}, z: {}],\n"
+			"  .allSolid = {},\n"
+			"}}",
+			BSPContentsToString(trace.content),
+			trace.content,
+			trace.fraction,
+			LOG_UNPACK_GLMVEC3(trace.normal),
+			trace.allSolid
+		);
+	}
 };
 
 class BSPMap {
@@ -50,6 +72,8 @@ public:
 	std::vector<BSPSurface> opaqueSurfaces;
 	std::vector<BSPSurface> alphaTestSurfaces;
 	std::vector<BSPSurface> blendedSurfaces;	// NOTE: unimplemented at the moment
+
+	std::vector<BSPBrushEntity> brushEntities;
 	
 	Texture* nullTexture = nullptr;
 

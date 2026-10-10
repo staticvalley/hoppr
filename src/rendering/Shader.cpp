@@ -4,9 +4,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glad/glad.h>
-#include <SDL3/SDL.h>
 #include <fstream>
 #include <sstream>
+#include <Log.hpp>
 
 // handles basic shader operations
 Shader::Shader(const char* vertPath, const char* fragPath) {
@@ -30,7 +30,7 @@ Shader::Shader(const char* vertPath, const char* fragPath) {
         glGetProgramiv(id, GL_INFO_LOG_LENGTH, &errorLength);
         std::string errorMessage(errorLength, '\0');
         glGetProgramInfoLog(id, errorLength, &errorLength, errorMessage.data());
-        SDL_Log("shader link error: %s", errorMessage.c_str());
+        Log::error(Log::Channel::RENDERER, "Shader link error: {}", errorMessage);
     }
 
     // delete shaders now that they are linked
@@ -43,7 +43,7 @@ std::string Shader::parseShaderFile(const char* filePath) {
     // open file and error check
     std::ifstream shaderFile(filePath);
     if (!shaderFile.is_open()) {
-        SDL_Log("error opening shader file at \"%s\"", filePath);
+        Log::error(Log::Channel::RENDERER, "error opening shader file at \"{}\"", filePath);
         return "";
     }
 
@@ -75,7 +75,7 @@ GLuint Shader::compileShader(GLuint type, const std::string& source) {
         glGetShaderiv(shaderID, GL_INFO_LOG_LENGTH, &errorLength);
         std::string errorMessage(errorLength, '\0');
         glGetShaderInfoLog(shaderID, errorLength, &errorLength, errorMessage.data());
-        SDL_Log("shader compile error: %s", errorMessage.c_str());
+        Log::error(Log::Channel::RENDERER, "Shader compile error: {}", errorMessage);
         return 0;
     }
 

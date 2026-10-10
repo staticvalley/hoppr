@@ -11,6 +11,8 @@
 #include <string>
 #include <cstring>
 
+#include <Log.hpp>
+
 // define unit cube for skybox
 static const GLfloat SKYBOX_VERTICES[] = {
     -1, 1,-1,  -1,-1,-1,   1,-1,-1,   1,-1,-1,   1, 1,-1,  -1, 1,-1,
@@ -59,7 +61,7 @@ GLuint Skybox::loadCubeMap(const std::string faceFilePaths[], uint8_t skyboxType
 
     	unsigned char* data = stbi_load(faceFilePaths[i].c_str(), &width, &height, &nChannels, 0);
         if (!data) {
-            SDL_Log("error loading skybox face %d: %s", i, faceFilePaths[i].c_str());
+            Log::warn(Log::Channel::RENDERER, "Error loading skybox face {}: {}", i, faceFilePaths[i]);
             return id;
         }
 
@@ -152,7 +154,7 @@ Skybox::~Skybox() {
 void Skybox::draw(Camera& camera) {
     
     if (!shader) {
-	    SDL_Log("error loading shader: shader is null");
+	    Log::error(Log::Channel::RENDERER, "Error loading skybox shader: shader is null or not assigned. Skipping draw.");
         return;
     }
 

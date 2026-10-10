@@ -2,16 +2,17 @@
 #include <BSPFile.hpp>
 #include <WADFile.hpp>
 #include <string>
-#include <print>
 #include <memory>
 #include <Skybox.hpp>
 #include <SDL3/SDL.h>
+#include <Log.hpp>
+#include <BSPBrushEntity.hpp>
 
 BSPMap::BSPMap(const char* bspPath)
 {
 	if (!bsp.load(bspPath))
 		return;
-	 
+
 	// get WAD paths
 	std::vector<std::string> wadPaths = bsp.requiredWADs();
 
@@ -20,10 +21,15 @@ BSPMap::BSPMap(const char* bspPath)
 		WADFile wad;
 		std::string wadPath = ENGINE_WAD_DIR + wadName;
 		if (!wad.load(wadPath.c_str())) {
-			SDL_Log(std::format("BSPMap: missing \"{}\"", wadPath).c_str());
+			Log::warn(Log::Channel::MAPPING, "BSPMap: missing \"{}\"", wadPath);
 			continue;
 		}
 		wadTextureMap.merge(wad.takeTextures());
+	}
+
+	// compile brush entities
+	for (const BSPEntity& entity : bsp.entities()) {
+		brushEntities.push_back(BSPBrushEntity(entity));
 	}
 
 	buildSkybox();
@@ -57,6 +63,8 @@ void BSPMap::draw(Shader& shader, Camera& camera) {
 
 	skybox.draw(camera);
 }
+
+
 
 void BSPMap::drawSurface(BSPSurface surface, Shader& shader) {
 	
@@ -110,7 +118,7 @@ void BSPMap::buildSurfaces() {
 					} else {
 						// texture not found
 						textureCache[textureIndex] = nullptr;
-						std::println("tex not found: {}", currentTexture.name);
+						Log::warn(Log::Channel::MAPPING, "Texture not found: {}", currentTexture.name);
 					}
 				} else {
 					// texture in bsp file 
@@ -258,7 +266,7 @@ void BSPMap::buildSkybox() {
 				skyBoxName = entity.at("skyname");
 	}
 
-	std::println("skybox name: [{}]", skyBoxName);
+	Log::debug(Log::Channel::MAPPING, "Skybox Name: \"{}\"", skyBoxName);
 
 	const std::string basePath = std::string(ENGINE_SKY_DIR) + skyBoxName;
 
@@ -284,7 +292,7 @@ BSPHullTrace BSPMap::traceHullSegment(const int nodeIndex, const glm::vec3& segm
 		bool solid = nodeIndex == BSP_CONTENTS_SOLID;
 		return { nodeIndex, solid ? 0.0f : 1.0f, glm::vec3(0.0f), solid };
 	}
-		
+
 	const BSPClipNode& cNode = bsp.clipNodes()[nodeIndex];
 	const BSPPlane& cPlane = bsp.planes()[cNode.iPlane];
 	glm::vec3 planeNormal = BSP_TO_ENGINE_VECTOR(cPlane.vNormal);

@@ -4,7 +4,7 @@
 #include "../libs/stb/stb_image.h"
 #include <Texture.hpp>
 #include <SDL3/SDL.h>
-#include <cinttypes>
+#include <Log.hpp>
 
 Texture::Texture(const char* filePath) {
 
@@ -16,7 +16,7 @@ Texture::Texture(const char* filePath) {
 	if (textureData)
 		generateTexture(textureData, width, height, channels == 4 ? GL_RGBA : GL_RGB);
 	else
-		SDL_Log("failed to load texture file \"%s\"", filePath);
+		Log::error(Log::Channel::RENDERER, "Failed to load texture file \"{}\"", filePath);
 
 	stbi_image_free(textureData);
 }
