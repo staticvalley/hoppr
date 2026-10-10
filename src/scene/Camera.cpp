@@ -12,6 +12,7 @@ Camera::Camera(glm::vec3 startPosition, GLfloat fov, GLfloat aspectRatio)
 	  // view presets
 	  yaw(-90.0f),
 	  pitch(0.0f),
+	  roll(0.0f),
 	  // control presets
 	  mouseSensitivity(0.03f),
 	  // basic starting camera relative vectors
@@ -83,6 +84,10 @@ void Camera::updateViewXRelYRel(float x, float y) {
 	calcuateRelativeVectors();
 }
 
+void Camera::updateRoll(float z) {
+	roll = z;
+}
+
 void Camera::calcuateRelativeVectors() {
 	/*
 	 * forward vector
@@ -96,13 +101,22 @@ void Camera::calcuateRelativeVectors() {
 		)
 	);
 
-	// right vector (cross product of camera forward and world up (0, 1, 0))
-	right = glm::normalize(
+	// base right vector (cross product of camera forward and world up (0, 1, 0))
+	glm::vec3 baseRight = glm::normalize(
 		glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f))
 	);
 
 	// up vector (cross product of camera forward and camera right)
-	up = glm::normalize(
-		glm::cross(right, forward)
+	glm::vec3 baseUp = glm::normalize(
+		glm::cross(baseRight, forward)
 	);
+
+	glm::mat4 rollMatrix = glm::rotate(
+		glm::mat4(1.0f),
+		glm::radians(roll),
+		forward
+	);
+
+	right = glm::normalize(glm::vec3(rollMatrix * glm::vec4(baseRight, 0.0f)));
+	up    = glm::normalize(glm::vec3(rollMatrix * glm::vec4(baseUp, 0.0f)));
 }

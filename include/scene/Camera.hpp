@@ -17,6 +17,7 @@ public:
     glm::vec3 getRightDirection();
     glm::vec3 getUpDirection();
 
+    void updateRoll(float z);
     void updatePosition(glm::vec3 newPosition);
     void updateAspectRatio(GLfloat height, GLfloat width);
     void updateViewXRelYRel(float x, float y);
@@ -43,6 +44,9 @@ private:
 
     // up/down view
     GLfloat pitch;
+
+    // tilt view
+    GLfloat roll;
 
     // changable by window resize
     GLfloat aspectRatio;
