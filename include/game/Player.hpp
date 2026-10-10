@@ -2,6 +2,7 @@
 
 #include <Camera.hpp>
 #include <Model.hpp>
+#include <Input.hpp>
 #include <BSPMap.hpp>
 #include <PlayerMovement.hpp>
 
@@ -11,7 +12,7 @@ public:
 	Player(glm::vec3 position, GLfloat fov, GLfloat aspectRatio);
 	~Player();
 
-	void update(GLfloat dt, BSPMap& map);
+	void update(GLfloat dt, Input input, BSPMap& map);
 	void processMouse(GLfloat x, GLfloat y);
 	void updateCollisionBox();
 
