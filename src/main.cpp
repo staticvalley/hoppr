@@ -24,28 +24,23 @@
 #include <Lighting.hpp>
 #include <Collision.hpp>
 #include <BSPMap.hpp>
+#include <GameManager.hpp>
 
-#include <DebugDrawer.hpp>
+#include <DebugDraw.hpp>
 #include <DebugUtils.hpp>
+#include <Log.hpp>
 
 #define WINDOW_WIDTH 800.0f
 #define WINDOW_HEIGHT 600.0f
 
+#define MAP_NAME "cs_assault"
+
 SDL_Window* window = nullptr;
 SDL_GLContext opengl_context = nullptr;
-Shader* basic;
-Skybox* skybox;
-Player* player;
-PointLight pl;
 GLfloat lastTime = 0.0f;
-BSPMap* map;
-DirectionalLight sun;
-glm::vec3 spawnPos;
+GameManager* game;
 
-bool debugHudOn = false;
-bool lightOn = true;
-
-void drawDebugHud();
+//void drawDebugHud();
 FPSCounter fps;
 
 // program initialization
@@ -55,10 +50,11 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv) {
     (void)argc;
     (void)argv;
 
+    Log::init(spdlog::level::trace);
+
     // initialize sdl video subsystem
     if (!SDL_Init(SDL_INIT_VIDEO)) {
-        SDL_Log("sdl3 video subsystem could not be initialized: %s",
-            SDL_GetError());
+        Log::critical(Log::Channel::ENGINE, "Video subsystem could not be initialized: {}", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
@@ -73,27 +69,26 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv) {
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
     );
     if (!window) {
-        SDL_Log("sdl3 window creation failed: %s", SDL_GetError());
+        Log::critical(Log::Channel::ENGINE, "Window creation failed: {}", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
     // create context and attach to sdl window
     opengl_context = SDL_GL_CreateContext(window);
     if (!opengl_context) {
-        SDL_Log("sdl3 opengl context creation failed: %s", SDL_GetError());
+        Log::critical(Log::Channel::ENGINE, "Opengl context creation failed: {}", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
     // load glad gl functions
     if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
-        SDL_Log("glad failed to initialize");
+        Log::critical(Log::Channel::ENGINE, "Glad failed to initialize");
         return SDL_APP_FAILURE;
     }
 
     // init sdl event subsystem
     if (!SDL_Init(SDL_INIT_EVENTS)) {
-        SDL_Log("sdl3 event subsystem could not be initialized: %s",
-            SDL_GetError());
+        Log::critical(Log::Channel::ENGINE, "Event subsystem could not be initialized: {}", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
@@ -102,6 +97,23 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv) {
 
     // hide mouse when window is focused
     SDL_SetWindowRelativeMouseMode(window, true);
+
+    GameManagerInitConfig config = {
+        .baseWindowWidth    = WINDOW_WIDTH,
+        .baseWindowHeight   = WINDOW_HEIGHT,
+
+        .playerFOV  = 90.0f,
+
+        .mapPath    = "assets/game/" MAP_NAME ".bsp",
+
+        .nullTexturePath        = "assets/textures/missing_content.png",
+        .worldVertShaderPath    = "assets/shaders/phong.vert",
+        .worldFragShaderPath    = "assets/shaders/phong.frag",
+
+        .bindConfigPath = "assets/config/binds.txt",
+    };
+
+    game = new GameManager(config);
 
 #ifdef DEBUG
     // create imgui context and bind to sdl3 window
@@ -116,39 +128,10 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv) {
     ImGui_ImplSDL3_InitForOpenGL(window, opengl_context);
     ImGui_ImplOpenGL3_Init("#version 460");
 
-    DebugDrawer::init();
+    DebugDraw::init(game->player->camera);
+    DebugDraw::setEnabled(true);
 
 #endif
-
-    map = new BSPMap("assets/game/cs_assault.bsp");
-
-    map->nullTexture = new Texture("assets/textures/missing_content.png");
-
-    basic = new Shader("assets/shaders/phong.vert", "assets/shaders/phong.frag");
-
-    player = nullptr;
-    for (const BSPEntity& entity : map->bsp.entities()) {
-        if (entity.at("classname") == "info_player_start") {
-            std::string origin = entity.at("origin");
-            float x, y, z;
-            sscanf(origin.c_str(), "%f %f %f", &x, &y, &z);
-            spawnPos = glm::vec3(x, z, -y);
-            SDL_Log("spawn point found: %.2f %.2f %.2f", spawnPos.x, spawnPos.y, spawnPos.z);
-            player = new Player(spawnPos, 90.0f, WINDOW_WIDTH / WINDOW_HEIGHT);
-            break;
-        }
-    }
-    // fallback if no spawn found
-    if (!player) {
-        SDL_Log("no spawn point found, using default");
-        player = new Player(glm::vec3(0, 0, 0), 90.0f, WINDOW_WIDTH / WINDOW_HEIGHT);
-    }
-
-    sun.ambient_color = glm::vec3(1.0f, 1.0f, 1.0f);
-
-    pl.position = spawnPos;
-    pl.ambient_color = glm::vec3(0.2);
-    pl.diffuse_color = glm::vec3(0.9);
 
     return SDL_APP_CONTINUE;
 }
@@ -163,41 +146,16 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
     float deltaTime = currentTime - lastTime;
     lastTime = currentTime;
 
-    player->update(deltaTime, *map);
+    game->update(deltaTime);
+    game->render();
 
-    // clear color and depth buffers
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
-
-    basic->bind();
-
-    // camera uniforms
-    basic->setUniformMat4("u_view", player->camera->getViewMatrix());
-    basic->setUniformMat4("u_projection", player->camera->getProjectionMatrix());
-    basic->setUniformVec3("u_camera_position", player->camera->getPosition());
-
-    // light uniforms
-    basic->setUniformInt1("u_spot_light_count", 0);
-    basic->setUniformBool1("u_has_directional_light", true);
-
-    sun.apply(*basic);
-
-    //pl.position = glm::vec3(0, sin(currentTime) + 0.5, -0.5);
-
-    if (lightOn) {
-        basic->setUniformInt1("u_point_light_count", 1);
-        pl.apply(*basic, 0);
-    }
-    else {
-        basic->setUniformInt1("u_point_light_count", 0);
-    }
-
-    map->draw(*basic, *(player->camera));
-
-    if (debugHudOn) {
+    if (game->debugModeOn) {
+        DebugDraw::orientationGizmo();
+        // drawDebugHud();
         fps.tick();
-        drawDebugHud();
     }
+
+    DebugDraw::flush();
 
     // switch buffer to screen
     SDL_GL_SwapWindow(window);
@@ -209,34 +167,7 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
 SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
     // silence unused warnings
     (void)appstate;
-
-    switch (event->type) {
-    case SDL_EVENT_MOUSE_MOTION:
-        player->processMouse(event->motion.xrel, event->motion.yrel);
-        break;
-    case SDL_EVENT_WINDOW_RESIZED:
-        // set new aspect ratio for projection
-        player->camera->updateAspectRatio((float)event->window.data1, (float) event->window.data2);
-        glViewport(0, 0, event->window.data1, event->window.data2);
-        break;
-    case SDL_EVENT_KEY_DOWN:
-        if (event->key.scancode == SDL_SCANCODE_F) lightOn = !lightOn;
-        if (event->key.scancode == SDL_SCANCODE_F3) debugHudOn = !debugHudOn;
-        if (event->key.scancode == SDL_SCANCODE_N) {
-            if (player->movement.moveType == MovementType::WALK) {
-                player->movement.moveType = MovementType::NOCLIP;
-            } else {
-                player->movement.moveType = MovementType::WALK;
-            }
-        }
-        break;
-    case SDL_EVENT_QUIT:
-        return SDL_APP_SUCCESS;
-        break;
-    default:
-        break;
-    }
-    return SDL_APP_CONTINUE;
+    return game->handleEvent(event);
 }
 
 // no cleanup needed, sdl cleans up its own entities
@@ -244,32 +175,32 @@ void SDL_AppQuit(void* appstate, SDL_AppResult result) {
     // silence unused warnings
     (void)appstate;
     (void)result;
-
-    delete player;
-    delete basic;
+    delete game;
 #ifdef DEBUG
-    DebugDrawer::cleanup();
+    DebugDraw::cleanup();
 #endif 
     SDL_GL_DestroyContext(opengl_context);
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
 
+/*
 void drawDebugHud() {
 
     glm::vec3 cameraPosition = player->camera->getPosition();
     glm::vec3 cameraForward = player->camera->getForwardDirection();
 
     glm::vec3 velocity = player->movement.velocity;
+    float speed = player->movement.getSpeed();
     glm::vec3 origin = player->movement.origin;
-    DebugDrawer::draw3DGizmo(*(player->camera));
+    DebugDraw::orientationGizmo();
     //for (SceneObject& obj : sceneObjectList)
     //    DebugDrawer::drawAABB(*(player->camera), obj.model->boundingBox);
 
-    DebugDrawer::drawPoint(*(player->camera), origin, glm::vec3(0, 1, 1), 0.5);
-    DebugDrawer::drawPoint(*(player->camera), glm::vec3(0,0,0), glm::vec3(0, 0, 1), 0.5);
-    DebugDrawer::drawPoint(*(player->camera), spawnPos, glm::vec3(1, 0, 0), 0.5);
-    DebugDrawer::drawPoint(*(player->camera), glm::vec3(spawnPos.x, 0, spawnPos.z), glm::vec3(0, 1, 0), 0.5);
+    DebugDraw::point(origin, glm::vec3(0, 1, 1), 0.5);
+    DebugDraw::point(glm::vec3(0,0,0), glm::vec3(0, 0, 1), 0.5);
+    DebugDraw::point(spawnPos, glm::vec3(1, 0, 0), 0.5);
+    DebugDraw::point(glm::vec3(spawnPos.x, 0, spawnPos.z), glm::vec3(0, 1, 0), 0.5);
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
@@ -281,6 +212,7 @@ void drawDebugHud() {
     ImGui::Text("camera pos [%.2lf %.2lf %.2lf]", cameraPosition.x, cameraPosition.y, cameraPosition.z);
     ImGui::Text("camera view [%.2lf %.2lf %.2lf]", cameraForward.x, cameraForward.y, cameraForward.z);
     ImGui::Text("origin [%.2lf %.2lf %.2lf]", origin.x, origin.y, origin.z);
+    ImGui::Text("speed %.2lf", speed);
     ImGui::Text("velocity [%.2lf %.2lf %.2lf]", velocity.x, velocity.y, velocity.z);
     ImGui::Text(fps.fpsString.c_str());
     ImGui::End();
@@ -288,4 +220,4 @@ void drawDebugHud() {
     ImGui::Render();
 
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
+}*/
