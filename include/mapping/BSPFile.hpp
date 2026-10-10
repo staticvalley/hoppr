@@ -36,6 +36,7 @@ enum LumpType {
 	MODELS = 14
 };
 
+#define ARRAY3_TO_GLMVEC3(a) glm::vec3(a[0], a[1], a[2])
 #define VECTOR3D_TO_GLMVEC3(v) glm::vec3(v.x, v.y, v.z)
 struct Vector3D {
 	float x, y, z;
@@ -143,6 +144,18 @@ struct BSPFace {
 #define BSP_CONTENTS_SLIME	-4 // slime leaf
 #define BSP_CONTENTS_LAVA	-5 // lava leaf
 #define BSP_CONTENTS_SKY	-6 // sky leaf
+
+static inline const char* BSPContentsToString(int c) {
+	switch(c) {
+		case BSP_CONTENTS_EMPTY: return "EMPTY";
+		case BSP_CONTENTS_SOLID: return "SOLID";
+		case BSP_CONTENTS_WATER: return "WATER";
+		case BSP_CONTENTS_SLIME: return "SLIME";
+		case BSP_CONTENTS_LAVA:  return "LAVA";
+		case BSP_CONTENTS_SKY:   return "SKY";
+		default:                 return "UNKNOWN";
+	}
+}
 
 struct BSPClipNode {
 	int32_t iPlane;       // index into planes

@@ -4,7 +4,6 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <print>
 #include <unordered_map>
 #include <vector>
 
@@ -75,8 +74,25 @@ void BSPFile::processLump(std::ifstream& fileStream, LumpType lump) {
 
 std::vector<std::string> BSPFile::requiredWADs() {
 
-	const auto getFileName = [](const std::string& s) -> std::string {
-		return std::filesystem::path(s).filename().string();
+	const auto trim = [](std::string s) -> std::string {
+		while (!s.empty() && (s.back() == '\0' || s.back() == ' ' ||
+							   s.back() == '\r' || s.back() == '\n' || s.back() == '\t'))
+			s.pop_back();
+		// also strip from the front, in case of leading garbage
+		size_t startPos = 0;
+		while (startPos < s.size() && (s[startPos] == '\0' || s[startPos] == ' ' ||
+										s[startPos] == '\r' || s[startPos] == '\n' || s[startPos] == '\t'))
+			++startPos;
+		return s.substr(startPos);
+	};
+
+	const auto getFileName = [&](const std::string& s) -> std::string {
+		std::string cleaned = trim(s);
+
+		size_t pos = cleaned.find_last_of("/\\");
+		if (pos == std::string::npos)
+			return cleaned;
+		return cleaned.substr(pos + 1);
 	};
 
 	// make a vector of split strings from a string at the delimiter
@@ -130,6 +146,7 @@ std::vector<BSPEntity> BSPFile::processEntityLump(std::ifstream& fileStream) {
 	if (!fileStream)
 		throw std::runtime_error("failed to read entity lump");
 
+	//std::print("{}", entityBlob);
 	return parseEntityMapPairs(entityBlob);
 }
 
@@ -235,13 +252,24 @@ std::vector<BSPTexture> BSPFile::processTextureLump(std::ifstream& fileStream) {
 		// final texture with pixel data attached
 		BSPTexture currentTexture{};
 
+		if (offsets[i] == -1) {
+			// no miptex data, make a dummy one
+			BSPTexture dummyTexture{};
+			dummyTexture.width = 0;
+			dummyTexture.height = 0;
+			dummyTexture.external = true;
+			dummyTexture.name[0] = '\0';
+			textureList.push_back(dummyTexture);
+			continue;
+		}
+
 		// null texture
-		if (offsets[i] < 0)
-			throw std::runtime_error("invalid texture offset");
+		if (offsets[i] < -1)
+			throw std::runtime_error("invalid texture offset (< -1)");
 
 		// bounds check
 		if (offsets[i] + (int32_t)sizeof(BSPMipTexture) > textureLump.nLength)
-			throw std::runtime_error("invalid texture offset");
+			throw std::runtime_error("invalid texture offset (OOB)");
 
 		// offset stream to lump start + miptexture offset
 		fileStream.seekg(textureLump.nOffset + offsets[i], std::ios::beg);
