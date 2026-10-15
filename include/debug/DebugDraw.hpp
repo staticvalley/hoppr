@@ -32,7 +32,7 @@ namespace DebugDraw {
     /**
      * @brief set up and initialize draw buffer and vao
      * @param debugCamera camera that debug items will draw too
-     * @note initialization enables by default (to disable, call setEnabled(false);)
+     * @note initialization disabled by default (to enable, call setEnabled(false);)
      */
     void init(Camera* debugCamera);
 

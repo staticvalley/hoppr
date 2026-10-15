@@ -166,7 +166,7 @@ namespace DebugDraw {
 
         glBindVertexArray(0);
 
-        setEnabled(true);
+        setEnabled(false);
     }
 
     void cleanup() {

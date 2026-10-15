@@ -3,9 +3,9 @@
 #include <algorithm>
 #include <print>
 #include <BSPBrushEntity.hpp>
-
-#include "DebugDraw.hpp"
-#include "Log.hpp"
+#include <DebugDraw.hpp>
+#include <Log.hpp>
+#include <Util.hpp>
 
 int PlayerMovement::clipVelocity(const glm::vec3& in, const glm::vec3& normal, glm::vec3& out, float overBounce) {
     float backoff = glm::dot(in, normal) * overBounce;
@@ -613,8 +613,8 @@ const BSPBrushEntity* PlayerMovement::findLadder(BSPMap& map) {
         // debug ladders
         // get bounding box
         const BSPModel& ladderModel = map.bsp.models()[entity.modelIndex];
-        glm::vec3 minPoint = BSP_TO_ENGINE_VECTOR(ARRAY3_TO_GLMVEC3(ladderModel.nMins));
-        glm::vec3 maxPoint = BSP_TO_ENGINE_VECTOR(ARRAY3_TO_GLMVEC3(ladderModel.nMaxs));
+        glm::vec3 minPoint = Conversions::goldsrcToEngineVec(ladderModel.nMins);
+        glm::vec3 maxPoint = Conversions::goldsrcToEngineVec(ladderModel.nMaxs);
 
         DebugDraw::boundingBox(minPoint, maxPoint);
 #endif

@@ -36,8 +36,6 @@ enum LumpType {
 	MODELS = 14
 };
 
-#define ARRAY3_TO_GLMVEC3(a) glm::vec3(a[0], a[1], a[2])
-#define VECTOR3D_TO_GLMVEC3(v) glm::vec3(v.x, v.y, v.z)
 struct Vector3D {
 	float x, y, z;
 };

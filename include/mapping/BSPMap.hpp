@@ -10,14 +10,14 @@
 #include <memory>
 #include <unordered_map>
 #include <BSPBrushEntity.hpp>
+#include <Util.hpp>
 
 #include "Log.hpp"
 
 #define ENGINE_WAD_DIR "assets/game/"
 #define ENGINE_SKY_DIR "assets/game/sky/"
 
-// goldsrc bsp's have +z as up, converts to [xyz] opengl format
-#define BSP_TO_ENGINE_VECTOR(v) glm::vec3(v.x, v.z, -v.y) 
+
 
 struct BSPSurface {
 	Mesh* mesh;
@@ -40,13 +40,13 @@ struct std::formatter<BSPHullTrace> : std::formatter<char> {
 			"BSPHullTrace: {{\n"
 			"  .content = {} ({}),\n"
 			"  .fraction = {},\n"
-			"  .normal = [x: {}, y: {}, z: {}],\n"
+			"  .normal = {},\n"
 			"  .allSolid = {},\n"
 			"}}",
 			BSPContentsToString(trace.content),
 			trace.content,
 			trace.fraction,
-			LOG_UNPACK_GLMVEC3(trace.normal),
+			trace.normal,
 			trace.allSolid
 		);
 	}
