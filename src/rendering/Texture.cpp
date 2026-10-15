@@ -25,9 +25,43 @@ Texture::Texture(const uint8_t* data, const int width, const int height, const G
 	generateTexture(data, width, height, format);
 }
 
+Texture::Texture(const uint8_t* data, const uint8_t* palette, const int width, const int height, bool isTransparent) {
+	const std::vector<uint8_t> convertedPixels = convertWithPalette(
+		data,
+		palette,
+		width * height,
+		isTransparent
+	);
+	generateTexture(convertedPixels.data(), width, height, isTransparent ? GL_RGBA : GL_RGB);
+}
+
 
 Texture::~Texture() {
 	glDeleteTextures(1, &id);
+}
+
+
+std::vector<uint8_t> Texture::convertWithPalette(const uint8_t *data, const uint8_t *palette, size_t dataSize, bool isTransparent) {
+
+	std::vector<uint8_t> pixels(dataSize * (isTransparent ? 4 : 3));
+
+	if (isTransparent) {
+		// convert paletted pixels to rgba
+		for (size_t p = 0; p < dataSize; p++) {
+			pixels[p * 4 + 0] = palette[data[p] * 3 + 0];
+			pixels[p * 4 + 1] = palette[data[p] * 3 + 1];
+			pixels[p * 4 + 2] = palette[data[p] * 3 + 2];
+			pixels[p * 4 + 3] = (isTransparent && data[p] == 255) ? 0 : 255;
+		}
+	} else {
+		for (size_t p = 0; p < dataSize; p++) {
+			pixels[p * 3 + 0] = palette[data[p] * 3 + 0];
+			pixels[p * 3 + 1] = palette[data[p] * 3 + 1];
+			pixels[p * 3 + 2] = palette[data[p] * 3 + 2];
+		}
+	}
+
+	return pixels;
 }
 
 void Texture::bind(GLuint slot) {

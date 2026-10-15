@@ -7,6 +7,7 @@
 #include <SDL3/SDL.h>
 #include <Log.hpp>
 #include <BSPBrushEntity.hpp>
+#include <Util.hpp>
 
 BSPMap::BSPMap(const char* bspPath)
 {
@@ -85,7 +86,7 @@ void BSPMap::buildSurfaces() {
 	// make cache for texture pointers
 	std::unordered_map<int, std::shared_ptr<Texture>> textureCache;
 
-	for (int j = 0; j < bsp.models().size(); j++) {
+	for (size_t j = 0; j < bsp.models().size(); j++) {
 
 		// model 0 is world geometry model
 		// models after 0 are brush entities
@@ -150,27 +151,13 @@ std::shared_ptr<Texture> BSPMap::buildTexture(const BSPTexture& bspTexture) {
 	// '{' signals texture with transparency in goldsrc
 	bool isTransparent = bspTexture.name[0] == '{';
 
-	std::vector<uint8_t> pixel(bspTexture.width * bspTexture.height * (isTransparent ? 4 : 3));
-
-	if (isTransparent){
-		// convert paletted pixels to rgba
-		for (int p = 0; p < bspTexture.width * bspTexture.height; p++) {
-			uint8_t paletteIndex = bspTexture.pixels[p];
-			pixel[p * 4 + 0] = bspTexture.palette[paletteIndex * 3 + 0];
-			pixel[p * 4 + 1] = bspTexture.palette[paletteIndex * 3 + 1];
-			pixel[p * 4 + 2] = bspTexture.palette[paletteIndex * 3 + 2];
-			pixel[p * 4 + 3] = (isTransparent && paletteIndex == 255) ? 0 : 255;
-		}
-	} else {
-		for (int p = 0; p < bspTexture.width * bspTexture.height; p++) {
-			uint8_t paletteIndex = bspTexture.pixels[p];
-			pixel[p * 3 + 0] = bspTexture.palette[paletteIndex * 3 + 0];
-			pixel[p * 3 + 1] = bspTexture.palette[paletteIndex * 3 + 1];
-			pixel[p * 3 + 2] = bspTexture.palette[paletteIndex * 3 + 2];
-		}
-	}
-
-	return std::shared_ptr<Texture>(new Texture(pixel.data(), bspTexture.width, bspTexture.height, (isTransparent ? GL_RGBA : GL_RGB)));
+	return std::shared_ptr<Texture>(new Texture(
+		bspTexture.pixels.data(),
+		bspTexture.palette.data(),
+		bspTexture.width,
+		bspTexture.height,
+		isTransparent
+	));
 }
 
 Mesh* BSPMap::buildFaceMesh(const BSPFace& face) {
@@ -182,10 +169,10 @@ Mesh* BSPMap::buildFaceMesh(const BSPFace& face) {
 
 	// for lightmap calculations
 	std::vector<glm::vec2> baseTexCoords;
-	float minU = std::numeric_limits<float>::max();
-	float maxU = std::numeric_limits<float>::lowest();
-	float minV = std::numeric_limits<float>::max();
-	float maxV = std::numeric_limits<float>::lowest();
+	//float minU = std::numeric_limits<float>::max();
+	//float maxU = std::numeric_limits<float>::lowest();
+	//float minV = std::numeric_limits<float>::max();
+	//float maxV = std::numeric_limits<float>::lowest();
 
 	// collect vertices in order
 	std::vector<glm::vec3> faceVertices;
@@ -211,13 +198,13 @@ Mesh* BSPMap::buildFaceMesh(const BSPFace& face) {
 		else
 			bspVertex = bsp.vertices()[edge.iVertex[1]];
 
-		faceVertices.push_back(BSP_TO_ENGINE_VECTOR(bspVertex));
+		faceVertices.push_back(Conversions::goldsrcToEngineVec(bspVertex));
 	}
 
 	const BSPPlane& plane = bsp.planes()[face.iPlane];
 
 	// get normal of face plane in opengl directions
-	glm::vec3 normal = BSP_TO_ENGINE_VECTOR(plane.vNormal);
+	glm::vec3 normal = Conversions::goldsrcToEngineVec(plane.vNormal);
 	
 	// flip orientation
 	if (face.nPlaneSide) normal = -normal;
@@ -229,8 +216,8 @@ Mesh* BSPMap::buildFaceMesh(const BSPFace& face) {
 		vertex.normal = normal;
 
 		// texture access vectors
-		glm::vec3 s = BSP_TO_ENGINE_VECTOR(texInfo.vS);
-		glm::vec3 t = BSP_TO_ENGINE_VECTOR(texInfo.vT);
+		glm::vec3 s = Conversions::goldsrcToEngineVec(texInfo.vS);
+		glm::vec3 t = Conversions::goldsrcToEngineVec(texInfo.vT);
 
 		// uv coordinates for vertex
 		// 1. project vertex position to texel (s,t) coordinates
@@ -246,7 +233,7 @@ Mesh* BSPMap::buildFaceMesh(const BSPFace& face) {
 
 	// fan triangulate the convex polygon
 	// vertex 0 is the hub, connect to each subsequent edge
-	for (int i = 1; i < faceVertices.size() - 1; i++) {
+	for (size_t i = 1; i < faceVertices.size() - 1; i++) {
 		indices.push_back(0);
 		indices.push_back(i);
 		indices.push_back(i + 1);
@@ -295,7 +282,7 @@ BSPHullTrace BSPMap::traceHullSegment(const int nodeIndex, const glm::vec3& segm
 
 	const BSPClipNode& cNode = bsp.clipNodes()[nodeIndex];
 	const BSPPlane& cPlane = bsp.planes()[cNode.iPlane];
-	glm::vec3 planeNormal = BSP_TO_ENGINE_VECTOR(cPlane.vNormal);
+	glm::vec3 planeNormal = Conversions::goldsrcToEngineVec(cPlane.vNormal);
 
 	float segmentStartDistance = glm::dot(
 		segmentStart,
