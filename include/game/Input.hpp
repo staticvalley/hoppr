@@ -22,6 +22,9 @@ enum class Action : uint8_t {
     NOCLIP,
     DEBUG,
 
+    FIRST_PERSON,
+    THIRD_PERSON,
+
     // just used to count how many actions are possible dynamically
     IMPL_ACTION_COUNT
 };
@@ -39,6 +42,9 @@ static const std::unordered_map<std::string, Action> ActionCommands = {
 
     {"NOCLIP", Action::NOCLIP},
     {"DEBUG", Action::DEBUG},
+
+    {"FIRSTPERSON", Action::FIRST_PERSON},
+    {"THIRDPERSON", Action::THIRD_PERSON},
 };
 
 enum class BindingType : uint8_t {
@@ -77,10 +83,10 @@ public:
 
     /**
      * @brief pass event to input to handle special bindings
-     * @note this is mostly used for mouse scroll wheel updates
+     * @note this is mostly used for mouse scroll wheel updates (could change name later)
      * @param event
      */
-    void handleEvent(const SDL_Event* event);
+    void pollMouseWheel(const SDL_Event* event);
 
     /**
      * @brief reset mouse wheel booleans for polling events
@@ -89,32 +95,45 @@ public:
     void resetMouseWheelPoll();
 
     /**
+     * @brief save action states for current frame
+     * @note should be called once each frame
+     */
+    void snapshotActionStates();
+
+    /**
      * @brief check if any bindings for some action have been pressed
      * @param action action to search for
      * @return if any bindings for the action have been pressed @code(true == pressed, false == not pressed)
      */
     bool poll(Action action);
 
+    bool pressed(Action action);
+
+    bool released(Action action);
+
     /**
      * @brief sets binds given a file in a @code ACTION <space> BINDING @endcode format.
      * example:
      * @code
      * FORWARD 26
-     * BACKWARD 22
-     * LEFT 4
-     * RIGHT 7
-     * JUMP 44
      * JUMP MWHEELUP
      * JUMP MWHEELDOWN
-     * CROUCH 224
-     * SNEAK 225
+     * CROUCH M1
      * @endcode
      * @param filePath file with bindings
      */
     void setBindsFromFile(const char* filePath);
 
 private:
-    std::array<std::vector<Binding>, (size_t)Action::IMPL_ACTION_COUNT> bindings;
+    std::array<std::vector<Binding>, (size_t)Action::IMPL_ACTION_COUNT> bindings{};
+
+    std::array<bool, (size_t)Action::IMPL_ACTION_COUNT> wasDown{};
+    std::array<bool, (size_t)Action::IMPL_ACTION_COUNT> justPressed{};
+    std::array<bool, (size_t)Action::IMPL_ACTION_COUNT> justReleased{};
+
+    /// is mouse wheel being scrolled up
     bool wheelUp = false;
+
+    // is mouse wheel being scrolled down
     bool wheelDown = false;
 };

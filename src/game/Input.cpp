@@ -3,7 +3,7 @@
 void Input::bind(Action action, Binding binding) { bindings[(size_t)action].push_back(binding); }
 void Input::unbind(Action action) { bindings[(size_t)action].clear(); }
 
-void Input::handleEvent(const SDL_Event* event) {
+void Input::pollMouseWheel(const SDL_Event* event) {
     if (event->type == SDL_EVENT_MOUSE_WHEEL) {
         if (event->wheel.y > 0) wheelUp = true;
         if (event->wheel.y < 0) wheelDown = true;
@@ -14,6 +14,24 @@ void Input::resetMouseWheelPoll() {
     wheelUp = false;
     wheelDown = false;
 }
+
+void Input::snapshotActionStates() {
+    for (size_t action = 0; action < (size_t)Action::IMPL_ACTION_COUNT; action++) {
+        const bool isDown = poll((Action)action);
+
+        // action was not triggered but is this frame
+        justPressed[action] = isDown && !wasDown[action];
+
+        // action was triggered but hass stopped this frame
+        justReleased[action] = !isDown && wasDown[action];
+
+        // current state of action
+        wasDown[action] = isDown;
+    }
+}
+
+bool Input::pressed(Action action) { return justPressed[(size_t)action]; }
+bool Input::released(Action action) { return justReleased[(size_t)action]; }
 
 bool Input::poll(Action action) {
     const bool* keys = SDL_GetKeyboardState(nullptr);

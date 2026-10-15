@@ -12,7 +12,6 @@ Player::Player(glm::vec3 origin, GLfloat fov, GLfloat aspectRatio) {
 		fov, 
 		aspectRatio
 	);
-	updateCollisionBox();
 }
 
 Player::~Player() {
@@ -20,6 +19,15 @@ Player::~Player() {
 }
 
 void Player::update(float dt, Input input, BSPMap& map) {
+
+	// get movement type
+	if (input.pressed(Action::NOCLIP)) {
+		if (movement.moveType == MovementType::WALK) {
+			movement.moveType = MovementType::NOCLIP;
+		} else {
+			movement.moveType = MovementType::WALK;
+		}
+	}
 
 	movement.forwardMove = 0.0f;
 	movement.rightMove   = 0.0f;
@@ -51,8 +59,6 @@ void Player::update(float dt, Input input, BSPMap& map) {
 	movement.update(dt, map);
 
 	updateCamera();
-
-	updateCollisionBox();
 }
 
 void Player::updateCamera() {

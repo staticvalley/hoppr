@@ -2,7 +2,7 @@
 #include <SDL3/SDL.h>
 #include <DebugDraw.hpp>
 
-GameManager::GameManager(GameManagerInitConfig& config) {
+GameManager::GameManager(const GameManagerInitConfig& config) {
 
     input.setBindsFromFile(config.bindConfigPath);
 
@@ -51,8 +51,18 @@ GameManager::~GameManager() {
 }
 
 void GameManager::update(float dt) {
+
+    input.snapshotActionStates();
+
     player->update(dt, input, *map);
-    input.endFrame();
+
+    if (input.pressed(Action::DEBUG)) {
+        Log::info(Log::Channel::GAME, "Debug mode = {}", debugModeOn ? "ON" : "OFF");
+        debugModeOn = !debugModeOn;
+        DebugDraw::setEnabled(debugModeOn);
+    }
+
+    input.resetMouseWheelPoll();
 }
 
 void GameManager::render() {
@@ -78,7 +88,7 @@ void GameManager::render() {
 }
 
 SDL_AppResult GameManager::handleEvent(SDL_Event* event) {
-    input.handleEvent(event);
+    input.pollMouseWheel(event);
     switch (event->type) {
         case SDL_EVENT_MOUSE_MOTION:
             player->processMouse(event->motion.xrel, event->motion.yrel);
@@ -87,19 +97,6 @@ SDL_AppResult GameManager::handleEvent(SDL_Event* event) {
             // set new aspect ratio for projection
             player->camera->updateAspectRatio((float)event->window.data1, (float) event->window.data2);
             glViewport(0, 0, event->window.data1, event->window.data2);
-            break;
-        case SDL_EVENT_KEY_DOWN:
-            if (event->key.scancode == SDL_SCANCODE_F3) {
-                debugModeOn = !debugModeOn;
-                DebugDraw::setEnabled(debugModeOn);
-            }
-            if (event->key.scancode == SDL_SCANCODE_N) {
-                if (player->movement.moveType == MovementType::WALK) {
-                    player->movement.moveType = MovementType::NOCLIP;
-                } else {
-                    player->movement.moveType = MovementType::WALK;
-                }
-            }
             break;
         case SDL_EVENT_QUIT:
             return SDL_APP_SUCCESS;

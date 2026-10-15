@@ -27,7 +27,7 @@ struct GameManagerInitConfig {
 
 class GameManager {
 public:
-    GameManager(GameManagerInitConfig& config);
+    GameManager(const GameManagerInitConfig& config);
     ~GameManager();
 
     void update(float dt);

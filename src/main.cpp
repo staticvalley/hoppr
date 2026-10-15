@@ -1,13 +1,10 @@
 #define SDL_MAIN_USE_CALLBACKS 1
 
-#define DEBUG 1
-
 #include <glad/glad.h>
 
 #include <print>
 
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_opengl.h>
 #include <SDL3/SDL_main.h>
 
 // debug library
@@ -16,14 +13,7 @@
 #include "imgui_impl_opengl3.h"
 
 #include <Player.hpp>
-#include <Shader.hpp>
-#include <Camera.hpp>
-#include <Mesh.hpp>
-#include <Model.hpp>
-#include <Skybox.hpp>
 #include <Lighting.hpp>
-#include <Collision.hpp>
-#include <BSPMap.hpp>
 #include <GameManager.hpp>
 
 #include <DebugDraw.hpp>
@@ -115,7 +105,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv) {
 
     game = new GameManager(config);
 
-#ifdef DEBUG
+#if 1
     // create imgui context and bind to sdl3 window
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
