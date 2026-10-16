@@ -151,13 +151,13 @@ std::shared_ptr<Texture> BSPMap::buildTexture(const BSPTexture& bspTexture) {
 	// '{' signals texture with transparency in goldsrc
 	bool isTransparent = bspTexture.name[0] == '{';
 
-	return std::shared_ptr<Texture>(new Texture(
+	return std::make_shared<Texture>(
 		bspTexture.pixels.data(),
 		bspTexture.palette.data(),
 		bspTexture.width,
 		bspTexture.height,
 		isTransparent
-	));
+	);
 }
 
 Mesh* BSPMap::buildFaceMesh(const BSPFace& face) {
