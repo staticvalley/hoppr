@@ -53,13 +53,20 @@ namespace std {
      * @brief print formatter for any vector type with (.x, .y, .z)
      */
     template <Conversions::isVec3 T>
-    struct formatter<T> {
-        constexpr auto parse(format_parse_context& ctx) {
-            return ctx.begin();
-        }
+    struct formatter<T> : formatter<float> {
+        auto format(const T& vec, format_context& ctx) const {
+            auto out = ctx.out();
 
-        auto format(const T& vec, std::format_context& ctx) const {
-            return std::format_to(ctx.out(),"[x: {}, y: {}, z: {}]", vec.x, vec.y, vec.z);
+            out = std::format_to(out, "[x: ");
+            out = formatter<float>::format(vec.x, ctx);
+
+            out = std::format_to(out, ", y: ");
+            out = formatter<float>::format(vec.y, ctx);
+
+            out = std::format_to(out, ", z: ");
+            out = formatter<float>::format(vec.z, ctx);
+
+            return std::format_to(out, "]");
         }
     };
 }

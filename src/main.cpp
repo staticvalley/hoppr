@@ -7,11 +7,6 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
-// debug library
-#include "imgui.h"
-#include "imgui_impl_sdl3.h"
-#include "imgui_impl_opengl3.h"
-
 #include <Player.hpp>
 #include <Lighting.hpp>
 #include <GameManager.hpp>
@@ -29,8 +24,6 @@ SDL_Window* window = nullptr;
 SDL_GLContext opengl_context = nullptr;
 GLfloat lastTime = 0.0f;
 GameManager* game;
-
-//void drawDebugHud();
 FPSCounter fps;
 
 // program initialization
@@ -88,7 +81,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv) {
     // hide mouse when window is focused
     SDL_SetWindowRelativeMouseMode(window, true);
 
-    GameManagerInitConfig config = {
+    const GameManagerInitConfig config = {
         .baseWindowWidth    = WINDOW_WIDTH,
         .baseWindowHeight   = WINDOW_HEIGHT,
 
@@ -105,23 +98,13 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv) {
 
     game = new GameManager(config);
 
-#if 1
-    // create imgui context and bind to sdl3 window
-    ImGui::CreateContext();
-    ImGui::StyleColorsDark();
+    DebugDraw::init(DebugDraw::InitContext{
+        .window = window,
+        .glContext = opengl_context,
+        .baseCamera = game->player->camera
+    });
 
-    ImGuiStyle& style = ImGui::GetStyle();
-    float main_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
-    style.ScaleAllSizes(main_scale);        // bake a fixed style scale
-    style.FontScaleDpi = main_scale;        // set initial font scale
-
-    ImGui_ImplSDL3_InitForOpenGL(window, opengl_context);
-    ImGui_ImplOpenGL3_Init("#version 460");
-
-    DebugDraw::init(game->player->camera);
-    DebugDraw::setEnabled(true);
-
-#endif
+    DebugDraw::setDebugMenuEnabled(true);
 
     return SDL_APP_CONTINUE;
 }
@@ -141,8 +124,8 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
 
     if (game->debugModeOn) {
         DebugDraw::orientationGizmo();
-        // drawDebugHud();
         fps.tick();
+        DebugDraw::menuInfo("FPS", "{}", fps.fpsString.c_str());
     }
 
     DebugDraw::flush();
@@ -166,48 +149,8 @@ void SDL_AppQuit(void* appstate, SDL_AppResult result) {
     (void)appstate;
     (void)result;
     delete game;
-#ifdef DEBUG
     DebugDraw::cleanup();
-#endif 
     SDL_GL_DestroyContext(opengl_context);
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
-
-/*
-void drawDebugHud() {
-
-    glm::vec3 cameraPosition = player->camera->getPosition();
-    glm::vec3 cameraForward = player->camera->getForwardDirection();
-
-    glm::vec3 velocity = player->movement.velocity;
-    float speed = player->movement.getSpeed();
-    glm::vec3 origin = player->movement.origin;
-    DebugDraw::orientationGizmo();
-    //for (SceneObject& obj : sceneObjectList)
-    //    DebugDrawer::drawAABB(*(player->camera), obj.model->boundingBox);
-
-    DebugDraw::point(origin, glm::vec3(0, 1, 1), 0.5);
-    DebugDraw::point(glm::vec3(0,0,0), glm::vec3(0, 0, 1), 0.5);
-    DebugDraw::point(spawnPos, glm::vec3(1, 0, 0), 0.5);
-    DebugDraw::point(glm::vec3(spawnPos.x, 0, spawnPos.z), glm::vec3(0, 1, 0), 0.5);
-
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL3_NewFrame();
-    ImGui::NewFrame();
-
-    ImGui::SetNextWindowSize(ImVec2(0, 0));
-
-    ImGui::Begin("Debug");
-    ImGui::Text("camera pos [%.2lf %.2lf %.2lf]", cameraPosition.x, cameraPosition.y, cameraPosition.z);
-    ImGui::Text("camera view [%.2lf %.2lf %.2lf]", cameraForward.x, cameraForward.y, cameraForward.z);
-    ImGui::Text("origin [%.2lf %.2lf %.2lf]", origin.x, origin.y, origin.z);
-    ImGui::Text("speed %.2lf", speed);
-    ImGui::Text("velocity [%.2lf %.2lf %.2lf]", velocity.x, velocity.y, velocity.z);
-    ImGui::Text(fps.fpsString.c_str());
-    ImGui::End();
-
-    ImGui::Render();
-
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}*/
