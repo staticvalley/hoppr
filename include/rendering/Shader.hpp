@@ -18,6 +18,12 @@ public:
     ~Shader();
 
     /**
+     * @brief recompile shader programs from sourcefiles
+     * @return reload status (true == reloaded, false == rollback)
+     */
+    bool reload();
+
+    /**
      * @brief bind shader as active program 
      */
     void bind();
@@ -32,7 +38,7 @@ public:
      * @param name uniform identifier
      * @param value uniform boolean value
      */
-    void setUniformBool1(const char* name, const bool value);
+    void setUniformBool1(const char* name, bool value);
 
     /**
      * @brief set int uniform on shader
@@ -70,18 +76,43 @@ public:
     void setUniformMat4(const char* name, const glm::mat4& value);
 
 private:
-    // shader id
-    GLuint id;
+    /// shader id
+    GLuint id = 0;
 
-    // shader uniform name cache
+    /// path to vertex shader source code
+    const char* vertexPath    = nullptr;
+
+    /// path to fragment shader source code
+    const char* fragmentPath  = nullptr;
+
+    /// shader uniform name cache (name -> location)
     std::unordered_map<std::string, GLint> uniformCache;
     
-    // check shader for uniform name location
+    /**
+     * @brief check shader for uniform name location
+     * @param name name of uniform (ie. "u_model")
+     * @return location id of uniform
+     */
     GLint getUniformLocation(const char* name);
 
-    // parse shader file to string
-    std::string parseShaderFile(const char* filePath);
+    /**
+     * @brief builds shader program given source files
+     * @return shader program id (0 == failed compile)
+     */
+    GLuint buildProgram();
 
-    // compile vert/frag shader given source code
-    GLuint compileShader(GLuint type, const std::string& source);
+    /**
+     * @brief read shader file to a string
+     * @param path path to shader source code
+     * @return source code in string
+     */
+    std::string readShaderFile(const char* path);
+
+    /**
+     * @brief compile vertex/fragment shader given source code
+     * @param type type of shader (GL_VERTEX_SHADER, GL_FRAGMENT_SHADER)
+     * @param path path to shader source code
+     * @return shader id
+     */
+    GLuint compileShader(GLuint type, const char* path);
 };

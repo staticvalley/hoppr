@@ -1,5 +1,3 @@
-#pragma once
-
 #include <Shader.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -9,53 +7,96 @@
 #include <Log.hpp>
 
 // handles basic shader operations
-Shader::Shader(const char* vertPath, const char* fragPath) {
-    
-    // create shader
-    id = glCreateProgram();
+Shader::Shader(const char* vertPath, const char* fragPath)
+    : vertexPath(vertPath),
+      fragmentPath(fragPath)
+{
+    id = buildProgram();
 
-    // compile vertex and fragment shaders
-    GLuint vertexShader = compileShader(GL_VERTEX_SHADER, parseShaderFile(vertPath));
-    GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, parseShaderFile(fragPath));
+    if (id == 0) {
+        Log::error(Log::Channel::RENDERER, "shader ('{}', '{}') failed to build. objects supplied with this shader will not draw", vertPath, fragPath);
+    }
 
-    glAttachShader(id, vertexShader);
-    glAttachShader(id, fragmentShader);
-    glLinkProgram(id);
-    
+}
+
+bool Shader::reload() {
+
+    GLuint newId = buildProgram();
+
+    if (newId == 0) {
+        Log::warn(Log::Channel::RENDERER, "shader ('{}', '{}') reload failed, keeping previous version", vertexPath, fragmentPath);
+        return false;
+    }
+
+    glDeleteProgram(id);
+    id = newId;
+
+    // reset cache for new build
+    uniformCache.clear();
+
+    Log::info(Log::Channel::RENDERER, "shader ('{}', '{}') reloaded successfully", vertexPath, fragmentPath);
+
+    return true;
+}
+
+GLuint Shader::buildProgram() {
+
+    GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vertexPath);
+    GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentPath);
+
+    // compile stage failed
+    if (vertexShader == 0 || fragmentShader == 0) {
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+        return 0;
+    }
+
+    GLuint shaderProgram = glCreateProgram();
+
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+
+    // delete shaders after linking
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
     // check for linking errors and report
-    GLint errorCode;
-    glGetProgramiv(id, GL_LINK_STATUS, &errorCode);
-    if (errorCode == GL_FALSE) {
+    GLint linkingSuccessful;
+    glGetProgramiv(id, GL_LINK_STATUS, &linkingSuccessful);
+    if (linkingSuccessful == GL_FALSE) {
         int errorLength;
         glGetProgramiv(id, GL_INFO_LOG_LENGTH, &errorLength);
         std::string errorMessage(errorLength, '\0');
         glGetProgramInfoLog(id, errorLength, &errorLength, errorMessage.data());
-        Log::error(Log::Channel::RENDERER, "Shader link error: {}", errorMessage);
+        Log::error(Log::Channel::RENDERER, "shader ('{}', '{}') link error: {}", vertexShader, fragmentShader, errorMessage);
+        glDeleteProgram(id);
+        return 0;
     }
 
-    // delete shaders now that they are linked
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+    return shaderProgram;
 }
 
-std::string Shader::parseShaderFile(const char* filePath) {
+std::string Shader::readShaderFile(const char* path) {
     
     // open file and error check
-    std::ifstream shaderFile(filePath);
+    std::ifstream shaderFile(path);
     if (!shaderFile.is_open()) {
-        Log::error(Log::Channel::RENDERER, "error opening shader file at \"{}\"", filePath);
+        Log::error(Log::Channel::RENDERER, "error opening shader file at \"{}\"", path);
         return "";
     }
 
-    // read in entire file to string using std::stringstream
+    // read in entire file to string
     std::stringstream stringStream;
     stringStream << shaderFile.rdbuf();
     
     return stringStream.str();
 }
 
-GLuint Shader::compileShader(GLuint type, const std::string& source) {
-    
+GLuint Shader::compileShader(GLuint type, const char* path) {
+
+    std::string source = readShaderFile(path);
+
     // if shader code string does not exist, pass compiling
     if (source.empty()) return 0;
 
@@ -71,11 +112,12 @@ GLuint Shader::compileShader(GLuint type, const std::string& source) {
     glGetShaderiv(shaderID, GL_COMPILE_STATUS, &errorCode);
     if (errorCode == GL_FALSE) {
         // get error message and print
+        // this is so verbose to write out #openglblows
         int errorLength;
         glGetShaderiv(shaderID, GL_INFO_LOG_LENGTH, &errorLength);
         std::string errorMessage(errorLength, '\0');
         glGetShaderInfoLog(shaderID, errorLength, &errorLength, errorMessage.data());
-        Log::error(Log::Channel::RENDERER, "Shader compile error: {}", errorMessage);
+        Log::error(Log::Channel::RENDERER, "shader compile error in '{}': {}", path, errorMessage);
         return 0;
     }
 
@@ -94,7 +136,7 @@ void Shader::unbind() {
     glUseProgram(0);
 }
 
-void Shader::setUniformBool1(const char* name, const bool value) {
+void Shader::setUniformBool1(const char* name, bool value) {
     glUniform1i(getUniformLocation(name), (int)value);
 }
 
@@ -126,7 +168,14 @@ GLint Shader::getUniformLocation(const char* name) {
 
     // otherwise, search for location
     GLint location = glGetUniformLocation(id, name);
-    
+
+    if (location == -1)
+        Log::warn(Log::Channel::RENDERER, "uniform '{}' not found in shader ('{}', '{}')",
+            name,
+            vertexPath,
+            fragmentPath
+        );
+
     // write to cache
     uniformCache[name] = location;
 
