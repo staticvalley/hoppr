@@ -12,6 +12,7 @@ public:
 	Material material;
 	
 	Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices);
+
 	~Mesh();
 
 	// disallow copy, must transfer ownership
@@ -33,7 +34,10 @@ private:
 	GLuint vao;
 
 	// id to buffer object
-	GLuint vbo, ebo;
+	GLuint vbo;
+
+	// id to element object
+	GLuint ebo;
 	
 	// index count
 	GLsizei count;

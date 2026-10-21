@@ -2,12 +2,21 @@
 #include <Camera.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <Log.hpp>
+#include <Shader.hpp>
+
+// debug library
+#include "imgui.h"
+#include "imgui_impl_sdl3.h"
+#include "imgui_impl_opengl3.h"
+
+#include <SDL3/SDL.h>
 
 namespace DebugDraw {
 
     #define DEBUG_DRAWER_BUFFER_SIZE 512
 
     bool drawingIsEnabled = false;
+    bool debugMenuIsEnabled = false;
 
     Camera* camera = nullptr;
 
@@ -18,7 +27,9 @@ namespace DebugDraw {
     Shader* gizmoShader = nullptr;
     Shader* pointShader = nullptr;
 
-    std::vector<impl::DebugDrawCommand> commands;
+    std::vector<impl::DebugDrawCommand> commands{};
+
+    std::vector<std::pair<std::string, std::string>> menuInfoItems{};
 
     namespace impl {
 
@@ -137,11 +148,37 @@ namespace DebugDraw {
             _orientationGizmoInternal();
         }
 
+        void _addMenuInfoItem(const std::string& title, const std::string& value) {
+            std::pair infoItem = {title, value};
+            menuInfoItems.emplace_back(infoItem);
+        }
+
+        void _debugMenuDraw() {
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplSDL3_NewFrame();
+            ImGui::NewFrame();
+
+            ImGui::SetNextWindowSize(ImVec2(0, 0));
+
+            ImGui::Begin("Debug");
+
+            for (auto& [title, value] : menuInfoItems) {
+                std::string infoString = std::format("{}: {}", title, value);
+                ImGui::Text("%s", infoString.c_str());
+            }
+
+            ImGui::End();
+
+            ImGui::Render();
+
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        }
+
     }
 
-    void init(Camera* debugCamera) {
+    void init(const InitContext& initContext) {
 
-        camera = debugCamera;
+        camera = initContext.baseCamera;
 
         AABBShader = new Shader("assets/shaders/debug/debugAABB.vert", "assets/shaders/debug/debugAABB.frag");
         gizmoShader = new Shader("assets/shaders/debug/debug3DGizmo.vert", "assets/shaders/debug/debug3DGizmo.frag");
@@ -166,6 +203,21 @@ namespace DebugDraw {
 
         glBindVertexArray(0);
 
+        // create imgui context and bind to sdl3 window
+        ImGui::CreateContext();
+        ImGui::StyleColorsDark();
+
+        ImGuiStyle& style = ImGui::GetStyle();
+        float main_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
+        style.ScaleAllSizes(main_scale);        // bake a fixed style scale
+        style.FontScaleDpi = main_scale;        // set initial font scale
+
+        ImGui_ImplSDL3_InitForOpenGL(initContext.window, initContext.glContext);
+        ImGui_ImplOpenGL3_Init("#version 460");
+
+        commands.clear();
+        menuInfoItems.clear();
+
         setEnabled(false);
     }
 
@@ -184,6 +236,10 @@ namespace DebugDraw {
         drawingIsEnabled = enabled;
     }
 
+    void setDebugMenuEnabled(bool enabled) {
+        debugMenuIsEnabled = enabled;
+    }
+
     void flush() {
 
         if (!drawingIsEnabled) {
@@ -200,7 +256,12 @@ namespace DebugDraw {
         for (const impl::DebugDrawCommand& command : commands)
             std::visit([](const auto& cmd) { draw(cmd); }, command);
 
+        if (debugMenuIsEnabled) {
+            impl::_debugMenuDraw();
+        }
+
         commands.clear();
+        menuInfoItems.clear();
     }
 
     void boundingBox(const glm::vec3& min, const glm::vec3& max, glm::vec3 color) {

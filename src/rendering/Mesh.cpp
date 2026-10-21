@@ -1,5 +1,3 @@
-#pragma once
-
 #include <Vertex.hpp>
 #include <Mesh.hpp>
 #include <Material.hpp>
@@ -47,7 +45,12 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices)
 }
 
 Mesh::Mesh(Mesh&& other) noexcept
-	: vao(other.vao), vbo(other.vbo), ebo(other.ebo), count(other.count), vertices(other.vertices)
+	:	material(other.material),
+		vertices(std::move(other.vertices)),
+		vao(other.vao),
+		vbo(other.vbo),
+		ebo(other.ebo),
+		count(other.count)
 {
 	// clear values on rhs object to transfer single ownership
 	other.vao = 0;
@@ -65,11 +68,12 @@ Mesh& Mesh::operator=(Mesh&& other) noexcept {
 		glDeleteBuffers(1, &ebo);
 
 		// assign values from rhs object
+		material = other.material;
+		vertices = std::move(other.vertices);
 		vao = other.vao;
 		vbo = other.vbo;
 		ebo = other.ebo;
 		count = other.count;
-		vertices = other.vertices;
 
 		// clear values on rhs object to transfer single ownership
 		other.vao = 0;
@@ -78,8 +82,8 @@ Mesh& Mesh::operator=(Mesh&& other) noexcept {
 		other.count = 0;
 		other.vertices.clear();
 
-		return *this;
 	}
+	return *this;
 }
 
 Mesh::~Mesh() {

@@ -17,13 +17,6 @@
 #define ENGINE_WAD_DIR "assets/game/"
 #define ENGINE_SKY_DIR "assets/game/sky/"
 
-
-
-struct BSPSurface {
-	Mesh* mesh;
-	std::shared_ptr<Texture> texture;
-};
-
 struct BSPHullTrace {
 	int content;		// hit type
 	float fraction;		// fraction of segment completed before collision
@@ -69,9 +62,9 @@ public:
 	BSPFile bsp;
 	std::unordered_map<std::string, WADTexture> wadTextureMap;
 
-	std::vector<BSPSurface> opaqueSurfaces;
-	std::vector<BSPSurface> alphaTestSurfaces;
-	std::vector<BSPSurface> blendedSurfaces;	// NOTE: unimplemented at the moment
+	std::vector<Mesh*> opaqueSurfaces;
+	std::vector<Mesh*> alphaTestSurfaces;
+	std::vector<Mesh*> blendedSurfaces;	// NOTE: unimplemented at the moment
 
 	std::vector<BSPBrushEntity> brushEntities;
 	
@@ -83,8 +76,6 @@ private:
 
 	// construct texture-binded surfaces for each face in world model
 	void buildSurfaces();
-
-	void drawSurface(BSPSurface surface, Shader& shader);
 
 	// creates shared pointer to texture from given bsp entry
 	std::shared_ptr<Texture> buildTexture(const BSPTexture& bspTexture);

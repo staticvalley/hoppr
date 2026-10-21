@@ -6,6 +6,7 @@
 #include <Model.hpp>
 #include <Mesh.hpp>
 #include <Shader.hpp>
+#include <Log.hpp>
 
 #include <glm/glm.hpp>
 #include <vector>
@@ -23,7 +24,7 @@ void Model::addMesh(Mesh mesh) {
 	meshList.push_back(std::move(mesh)); // move ownership of mesh to Model
 }
 
-void Model::setTexture(Texture* texture) {
+void Model::setTexture(const std::shared_ptr<Texture>& texture) {
 	for (Mesh& mesh : meshList)
 		mesh.material.diffuseTexture = texture;
 }

@@ -38,14 +38,15 @@ BSPMap::BSPMap(const char* bspPath)
 }
 
 BSPMap::~BSPMap() {
-	for (BSPSurface& surface : opaqueSurfaces)
-		delete surface.mesh;
 
-	for (BSPSurface& surface : alphaTestSurfaces)
-		delete surface.mesh;
+	for (Mesh* surface : opaqueSurfaces)
+		delete surface;
 
-	for (BSPSurface& surface : blendedSurfaces)
-		delete surface.mesh;
+	for (Mesh* surface : alphaTestSurfaces)
+		delete surface;
+
+	for (Mesh* surface : blendedSurfaces)
+		delete surface;
 
 	delete nullTexture;
 }
@@ -54,31 +55,13 @@ void BSPMap::draw(Shader& shader, Camera& camera) {
 	
 	shader.setUniformMat4("u_model", glm::mat4(1.0f));
 
-	// opaque draw pass
-	for(BSPSurface& surface : opaqueSurfaces)
-		drawSurface(surface, shader);
+	for (Mesh* surface : opaqueSurfaces)
+		surface->draw(shader);
 
-	// transparent draw pass
-	for(BSPSurface surface : alphaTestSurfaces)
-		drawSurface(surface, shader);
+	for (Mesh* surface : alphaTestSurfaces)
+		surface->draw(shader);
 
 	skybox.draw(camera);
-}
-
-
-
-void BSPMap::drawSurface(BSPSurface surface, Shader& shader) {
-	
-	// if the surface doesnt have a set texture, use nullTexture
-	if (surface.texture)
-		surface.texture->bind(0);
-	else if (nullTexture)
-		nullTexture->bind(0);
-	else
-		return;
-
-	shader.setUniformInt1("u_texture", 0);
-	surface.mesh->draw(shader);
 }
 
 void BSPMap::buildSurfaces() {
@@ -127,9 +110,8 @@ void BSPMap::buildSurfaces() {
 				}
 			}
 
-			BSPSurface surface;
-			surface.mesh = buildFaceMesh(face);
-			surface.texture = textureCache[textureIndex];
+			Mesh* surface = buildFaceMesh(face);;
+			surface->material.diffuseTexture = textureCache[textureIndex];
 
 			if (textureCache[textureIndex] != nullptr)
 				switch (currentTexture.name[0]) {
