@@ -1,20 +1,23 @@
 #pragma once
 
+#include <format>
 #include <glm/glm.hpp>
 #include <glad/glad.h>
 #include <string>
 #include <unordered_map>
 
+
 // handles basic shader operations
 class Shader {
 public:
+
 
     /**
      * @brief constructs shader from files
      * @param vertPath full path to vertex shader file
      * @param fragPath full path to fragment shader file
      */
-    Shader(const char* vertPath, const char* fragPath);
+    Shader(const char* nameTag, const char* vertPath, const char* fragPath);
     ~Shader();
 
     /**
@@ -75,7 +78,25 @@ public:
      */
     void setUniformMat4(const char* name, const glm::mat4& value);
 
+    std::string debugShaderString() const {
+        return std::format(
+            "Shader: {{\n"
+            "  .nameTag = {},\n"
+            "  .vertPath = {},\n"
+            "  .fragPath = {},\n"
+            "  .id = {},\n"
+            "}}",
+            nameTag,
+            vertexPath,
+            fragmentPath,
+            id == 0 ? "uncompiled" : std::format("compiled (id: {})", id));
+    }
+
 private:
+
+    /// name of shader (for debug purposes)
+    std::string nameTag;
+
     /// shader id
     GLuint id = 0;
 
@@ -115,4 +136,18 @@ private:
      * @return shader id
      */
     GLuint compileShader(GLuint type, const char* path);
+
+    /**
+     * @brief check if shader is correctly compiled
+     * @return status of compilation (true == compiled, false == uncompiled)
+     */
+    bool isCompiled() const { return id != 0; }
+};
+
+// print formatter for Shaders
+template <>
+struct std::formatter<Shader> : std::formatter<char> {
+    auto format(const Shader& shader, std::format_context& ctx) const {
+        return std::format_to(ctx.out(),"{}", shader.debugShaderString());
+    }
 };

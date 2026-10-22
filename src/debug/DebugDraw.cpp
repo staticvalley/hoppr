@@ -180,8 +180,8 @@ namespace DebugDraw {
 
         camera = initContext.baseCamera;
 
-        AABBShader = new Shader("assets/shaders/debug/debugAABB.vert", "assets/shaders/debug/debugAABB.frag");
-        gizmoShader = new Shader("assets/shaders/debug/debug3DGizmo.vert", "assets/shaders/debug/debug3DGizmo.frag");
+        AABBShader = new Shader("debugAABB", "assets/shaders/debug/debugAABB.vert", "assets/shaders/debug/debugAABB.frag");
+        gizmoShader = new Shader("debug3DGizmo", "assets/shaders/debug/debug3DGizmo.vert", "assets/shaders/debug/debug3DGizmo.frag");
         pointShader = AABBShader;
 
         commands.clear();

@@ -62,6 +62,9 @@ void BSPMap::draw(Shader& shader, Camera& camera) {
 		surface->draw(shader);
 
 	skybox.draw(camera);
+
+	// rebind shader since skybox changes it
+	shader.bind();
 }
 
 void BSPMap::buildSurfaces() {
@@ -235,8 +238,6 @@ void BSPMap::buildSkybox() {
 				skyBoxName = entity.at("skyname");
 	}
 
-	Log::debug(Log::Channel::MAPPING, "Skybox Name: \"{}\"", skyBoxName);
-
 	const std::string basePath = std::string(ENGINE_SKY_DIR) + skyBoxName;
 
 	const std::string paths[6] = {
@@ -248,7 +249,9 @@ void BSPMap::buildSkybox() {
 		basePath + "bk.tga",
 	};
 
-	skybox = Skybox(paths, new Shader("assets/shaders/skybox.vert", "assets/shaders/skybox.frag"), SKYBOX_TYPE_GOLDSRC);
+	skybox = Skybox(paths, new Shader("BSPMapSkybox", "assets/shaders/skybox.vert", "assets/shaders/skybox.frag"), SKYBOX_TYPE_GOLDSRC);
+
+	Log::info(Log::Channel::MAPPING, "compiled skybox (name: \"{}\")", skyBoxName);
 }
 
 BSPHullTrace BSPMap::traceHullSegment(const int nodeIndex, const glm::vec3& segmentStart, const glm::vec3& segmentEnd) {

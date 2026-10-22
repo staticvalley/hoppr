@@ -7,14 +7,17 @@
 #include <Log.hpp>
 
 // handles basic shader operations
-Shader::Shader(const char* vertPath, const char* fragPath)
-    : vertexPath(vertPath),
-      fragmentPath(fragPath)
+Shader::Shader(const char* nameTag, const char* vertPath, const char* fragPath)
+    :   nameTag(std::string(nameTag)),
+        vertexPath(vertPath),
+        fragmentPath(fragPath)
 {
     id = buildProgram();
 
     if (id == 0) {
-        Log::error(Log::Channel::RENDERER, "shader ('{}', '{}') failed to build. objects supplied with this shader will not draw", vertPath, fragPath);
+        Log::error(Log::Channel::RENDERER, "shader ('{}') failed to build. objects supplied with this shader will not draw", nameTag);
+    } else {
+        Log::info(Log::Channel::RENDERER, "shader ('{}') successfully compiled", nameTag);
     }
 
 }
@@ -24,7 +27,7 @@ bool Shader::reload() {
     GLuint newId = buildProgram();
 
     if (newId == 0) {
-        Log::warn(Log::Channel::RENDERER, "shader ('{}', '{}') reload failed, keeping previous version", vertexPath, fragmentPath);
+        Log::warn(Log::Channel::RENDERER, "shader ('{}') reload failed, keeping previous version", nameTag);
         return false;
     }
 
@@ -34,7 +37,7 @@ bool Shader::reload() {
     // reset cache for new build
     uniformCache.clear();
 
-    Log::info(Log::Channel::RENDERER, "shader ('{}', '{}') reloaded successfully", vertexPath, fragmentPath);
+    Log::info(Log::Channel::RENDERER, "shader ('{}') reloaded successfully", nameTag);
 
     return true;
 }
@@ -69,7 +72,7 @@ GLuint Shader::buildProgram() {
         glGetProgramiv(id, GL_INFO_LOG_LENGTH, &errorLength);
         std::string errorMessage(errorLength, '\0');
         glGetProgramInfoLog(id, errorLength, &errorLength, errorMessage.data());
-        Log::error(Log::Channel::RENDERER, "shader ('{}', '{}') link error: {}", vertexShader, fragmentShader, errorMessage);
+        Log::error(Log::Channel::RENDERER, "shader ('{}') link error: {}", nameTag, errorMessage);
         glDeleteProgram(id);
         return 0;
     }
@@ -167,14 +170,10 @@ GLint Shader::getUniformLocation(const char* name) {
         return uniformCache[name];
 
     // otherwise, search for location
-    GLint location = glGetUniformLocation(id, name);
+    const GLint location = glGetUniformLocation(id, name);
 
     if (location == -1)
-        Log::warn(Log::Channel::RENDERER, "uniform '{}' not found in shader ('{}', '{}')",
-            name,
-            vertexPath,
-            fragmentPath
-        );
+        Log::warn(Log::Channel::RENDERER, "uniform '{}' not found in shader ('{}')",name,nameTag);
 
     // write to cache
     uniformCache[name] = location;
