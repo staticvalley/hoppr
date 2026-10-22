@@ -9,6 +9,7 @@ namespace {
 			  0, 0,   0, 255, 255, 0, 255, 255,
 		};
 		static Texture* texture = new Texture(pixels, 2, 2, GL_RGBA);
+		Log::warn(Log::Channel::RENDERER, "no texture found to bind");
 		return texture;
 	}
 }

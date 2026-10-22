@@ -61,7 +61,7 @@ GLuint Skybox::loadCubeMap(const std::string faceFilePaths[], uint8_t skyboxType
 
     	unsigned char* data = stbi_load(faceFilePaths[i].c_str(), &width, &height, &nChannels, 0);
         if (!data) {
-            Log::warn(Log::Channel::RENDERER, "Error loading skybox face {}: {}", i, faceFilePaths[i]);
+            Log::warn(Log::Channel::RENDERER, "error loading skybox face {}: {}", i, faceFilePaths[i]);
             return id;
         }
 
@@ -154,7 +154,7 @@ Skybox::~Skybox() {
 void Skybox::draw(Camera& camera) {
     
     if (!shader) {
-	    Log::error(Log::Channel::RENDERER, "Error loading skybox shader: shader is null or not assigned. Skipping draw.");
+	    Log::error(Log::Channel::RENDERER, "error loading skybox shader: shader is null or not assigned. Skipping draw.");
         return;
     }
 
@@ -180,6 +180,8 @@ void Skybox::draw(Camera& camera) {
     glDrawArrays(GL_TRIANGLES, 0, 36);
     glBindVertexArray(0);
     glDepthFunc(GL_LESS);
+
+    shader->unbind();
 }
 
 Skybox::Skybox(Skybox&& other) noexcept

@@ -1,5 +1,6 @@
 #include <BSPBrushEntity.hpp>
 #include <Log.hpp>
+#include <Util.hpp>
 
 BSPBrushEntity::BSPBrushEntity(BSPEntity entity) {
     const auto parseModelIndex = [](std::string& s) {
@@ -27,18 +28,18 @@ BSPBrushEntity::BSPBrushEntity(BSPEntity entity) {
                 modelIndex = parseModelIndex(entity.at("model"));
             } catch (const std::invalid_argument& e) {
                 // format isn't correct o algo
-                Log::error(Log::Channel::MAPPING, "Brush entity '{}''s 'model' key is invalid. Found string: '{}'", entity.at("classname"), entity.at("model"));
+                Log::error(Log::Channel::MAPPING, "brush entity '{}''s 'model' key is invalid. Found string: '{}'", entity.at("classname"), entity.at("model"));
             }
         } else {
             if (type != BrushEntityType::UNKNOWN) {
-                Log::warn(Log::Channel::MAPPING, "Brush entity '{}' has no 'model' key", entity.at("classname"));
+                Log::warn(Log::Channel::MAPPING, "brush entity '{}' has no 'model' key", entity.at("classname"));
             }
         }
 
         if (entity.contains("origin")) {
             origin = parseOrigin(entity.at("origin"));
+            //Log::debug(Log::Channel::MAPPING, "brush entity '{}' has a special dynamic origin: {}", entity.at("classname"), origin);
         } else {
-            Log::debug(Log::Channel::MAPPING, "Brush entity '{}' has no dynamic origin (defaulting to vec(0.0f)", entity.at("classname"));
             origin = glm::vec3(0.0f);
         }
     }

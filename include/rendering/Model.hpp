@@ -12,7 +12,9 @@
 class Model {
 public:
 
-	Model();
+	std::string name;
+
+	Model(std::string name);
 
 	// note: this function moves mesh data ownership from argument into Model
 	void addMesh(Mesh mesh);
@@ -33,12 +35,6 @@ public:
 	glm::mat4 getModelMatrix();
 
 	AABB boundingBox;
-
-	void printMeshStatus() {
-		for (auto &m: meshList) {
-			Log::info(Log::Channel::RENDERER, "{}", m.material.diffuseTexture ? "present" : "null");
-		}
-	}
 
 	// set bounding box max and min coords
 	void updateBoundingBox();
