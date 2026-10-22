@@ -14,8 +14,9 @@
 
 #include <SDL3/SDL.h>
 
-Model::Model()
-	: position(0.0f),
+Model::Model(std::string name)
+	: name(name),
+      position(0.0f),
 	  rotation(0.0f),
 	  scale(1.0f)
 {}
@@ -31,8 +32,9 @@ void Model::setTexture(const std::shared_ptr<Texture>& texture) {
 
 void Model::draw(Shader& shader) {
 	shader.setUniformMat4("u_model", getModelMatrix());
-	for (Mesh& mesh : meshList)
+	for (Mesh& mesh : meshList) {
 		mesh.draw(shader);
+	}
 }
 
 glm::mat4 Model::getModelMatrix() {
@@ -83,7 +85,7 @@ Model* Model::loadOBJ(const char* filePath) {
 		return nullptr;
 	}
 
-	Model* model = new Model();
+	Model* model = new Model(filePath);
 
 	for (tinyobj::shape_t& shape : shapes) {
 		

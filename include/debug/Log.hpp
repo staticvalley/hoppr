@@ -19,6 +19,7 @@ namespace Log {
         PHYSICS     = 3,
         RENDERER    = 4,
         PLAYER      = 5,
+        MDL         = 6,
     };
 
     namespace impl {

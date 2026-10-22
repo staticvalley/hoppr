@@ -4,6 +4,7 @@
 #include <Player.hpp>
 #include <Input.hpp>
 #include <Lighting.hpp>
+#include <MDLAsset.hpp>
 
 struct GameManagerInitConfig {
     // base window sizings
@@ -41,7 +42,15 @@ public:
     BSPMap *map                 = nullptr;
 
     Shader *worldShader         = nullptr;
+    Shader *flatShader          = nullptr;
     DirectionalLight worldLight;
 
     glm::vec3 worldSpawn        = glm::vec3(0.0f, 0.0f, 0.0f);
+
+    std::unique_ptr<MDLAsset> character = nullptr;
+
+private:
+
+    void applyPhongUniforms(Shader& shader);
+
 };

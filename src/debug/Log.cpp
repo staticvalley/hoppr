@@ -11,6 +11,7 @@ namespace Log {
             {Channel::PHYSICS,  "physics"},
             {Channel::RENDERER, "renderer"},
             {Channel::PLAYER,   "player"},
+            {Channel::MDL,      "mdl_loader"}
         };
 
         std::shared_ptr<spdlog::logger> getLoggerChannel(Channel channel) {

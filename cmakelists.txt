@@ -66,7 +66,9 @@ add_executable(${PROJECT_NAME}
     src/rendering/Model.cpp
     src/rendering/Texture.cpp
     src/rendering/Material.cpp
+    src/rendering/MDLAsset.cpp
     src/rendering/Skybox.cpp
+    src/rendering/MDLAsset.cpp
     src/scene/Camera.cpp
     src/game/Player.cpp
     src/game/Input.cpp

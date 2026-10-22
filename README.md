@@ -20,7 +20,7 @@ A from-scratch OpenGL engine which renders original goldsrc `.bsp` maps for prac
 - [ ] door brush entity interaction
 - [ ] button brush entity interaction
 - [ ] water movement
-- [ ] `.mdl` model rendering
+- [x] `.mdl` model rendering
 - [ ] `.mdl` model animation
 - [ ] viewmodels
 - [ ] HUD
